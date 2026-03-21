@@ -20,6 +20,23 @@
 
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; color: var(--text); overflow-x: hidden; transition: 0.3s; }
 
+        /* --- THEME TOGGLE SWITCH --- */
+        .theme-switch-wrapper { display: flex; align-items: center; gap: 8px; }
+        .theme-switch {
+            position: relative; display: inline-block; width: 34px; height: 18px;
+        }
+        .theme-switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; inset: 0; background-color: rgba(255,255,255,0.3);
+            transition: .4s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px;
+            background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--success); }
+        input:checked + .slider:before { transform: translateX(16px); }
+
         /* --- LOGIN DESIGN --- */
         #loginOverlay {
             position: fixed; inset: 0; 
@@ -39,68 +56,20 @@
             animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .login-brand {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: var(--primary);
-            font-weight: 800;
-            margin-bottom: 5px;
-            display: block;
-        }
-
-        .login-card h3 {
-            margin: 0 0 8px;
-            font-size: 20px;
-            color: var(--text);
-            font-weight: 700;
-        }
-
-        .login-card p {
-            color: #888;
-            font-size: 12px;
-            margin: 0 0 25px;
-            line-height: 1.4;
-        }
-
+        .login-brand { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: var(--primary); font-weight: 800; margin-bottom: 5px; display: block; }
+        .login-card h3 { margin: 0 0 8px; font-size: 20px; color: var(--text); font-weight: 700; }
+        .login-card p { color: #888; font-size: 12px; margin: 0 0 25px; line-height: 1.4; }
         .pass-input-wrapper { margin-bottom: 20px; }
 
         #passInput {
-            text-align: center;
-            font-size: 22px;
-            letter-spacing: 8px;
-            padding: 12px;
-            border: 1.5px solid var(--border);
-            border-radius: 10px;
-            transition: all 0.2s ease;
-            background: var(--input-bg);
-            width: 100%;
-            box-sizing: border-box;
+            text-align: center; font-size: 22px; letter-spacing: 8px; padding: 12px;
+            border: 1.5px solid var(--border); border-radius: 10px; transition: all 0.2s ease;
+            background: var(--input-bg); width: 100%; box-sizing: border-box;
         }
 
-        #passInput:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 10px rgba(44, 123, 229, 0.15);
-            outline: none;
-        }
-
-        .btn-unlock {
-            width: 100%;
-            padding: 12px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-unlock:hover {
-            background: #1a5bb4;
-            transform: translateY(-1px);
-        }
+        #passInput:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(44, 123, 229, 0.15); outline: none; }
+        .btn-unlock { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+        .btn-unlock:hover { background: #1a5bb4; transform: translateY(-1px); }
 
         @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -127,8 +96,12 @@
         .nav-item { padding: 12px 25px; font-size: 14px; cursor: pointer; color: var(--text); font-weight: 600; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
         .nav-item:hover { background: rgba(44, 123, 229, 0.05); }
         .nav-item.selected { color: var(--primary); background: rgba(44, 123, 229, 0.08); border-left: 4px solid var(--primary); }
-        .sidebar-footer { padding: 20px; border-top: 1px solid var(--border); }
-        .reset-link { color: var(--danger); cursor: pointer; font-size: 12px; font-weight: bold; opacity: 0.7; }
+        .sidebar-footer { padding: 20px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
+        
+        .sidebar-link-btn { cursor: pointer; font-size: 12px; font-weight: bold; opacity: 0.8; transition: 0.2s; }
+        .sidebar-link-btn:hover { opacity: 1; }
+        .reset-link { color: var(--danger); }
+        .util-link { color: var(--text); }
 
         header { 
             background: linear-gradient(135deg, var(--primary), #1a5bb4); 
@@ -187,11 +160,8 @@
         .liability { background: #6c5ce7; } .savings { background: #00cec9; } .biz-profit { background: #4b6584; }
 
         .card-trans { 
-            background: var(--card-bg) !important; 
-            color: var(--text) !important; 
-            border: 1px solid var(--border);
-            border-top: 4px solid var(--accent-color);
-            box-shadow: var(--shadow);
+            background: var(--card-bg) !important; color: var(--text) !important; border: 1px solid var(--border);
+            border-top: 4px solid var(--accent-color); box-shadow: var(--shadow);
             display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 15px 10px;
         }
         .card-trans small { font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -216,7 +186,6 @@
         @media (max-width: 768px) {
             .chart-grid { grid-template-columns: 1fr; }
             .grid-stats { grid-template-columns: 1fr 1fr; }
-            .controls-bar { justify-content: center; }
             header { padding: 0 10px; }
         }
 
@@ -242,12 +211,17 @@
 
 <div id="mainApp" style="display:none;">
     <nav class="sidebar" id="sidebar">
-        <div style="padding: 20px 25px;"><h2 style="margin:0; font-size: 18px; color: var(--primary);">Main Menu</h2></div>
+        <div style="padding: 20px 25px;"><h2 style="margin:0; font-size: 18px; color: var(--primary);">Budget Monitoring</h2></div>
         <div class="nav-scroll">
             <div class="nav-item" id="nav-overview" onclick="switchSection('overview', this)">📊 Dashboard</div>
             <div class="nav-item" id="nav-business-hub" onclick="switchSection('business-hub', this)">💼 Business</div>
         </div>
-        <div class="sidebar-footer"><div class="reset-link" onclick="triggerFullReset()">⚠️ Reset Data</div></div>
+        <div class="sidebar-footer">
+            <div class="sidebar-link-btn util-link" onclick="exportData()">📤 Export Data (.json)</div>
+            <div class="sidebar-link-btn util-link" onclick="document.getElementById('importInput').click()">📥 Import Data (.json)</div>
+            <input type="file" id="importInput" style="display:none" onchange="importData(event)" accept=".json">
+            <div class="sidebar-link-btn reset-link" onclick="triggerFullReset()">⚠️ Reset System Data</div>
+        </div>
     </nav>
 
     <header>
@@ -255,13 +229,16 @@
             <button class="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
             <div style="font-weight:700; font-size:16px;">Budget Monitoring</div>
         </div>
-        <div style="display:flex; align-items:center; gap:8px;">
-            <button onclick="exportData()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:5px 10px; border-radius:12px; cursor:pointer; font-size:11px;">📤 Export</button>
-            <button onclick="document.getElementById('importInput').click()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:5px 10px; border-radius:12px; cursor:pointer; font-size:11px;">📥 Import</button>
-            <input type="file" id="importInput" style="display:none" onchange="importData(event)" accept=".json">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div class="theme-switch-wrapper">
+                <span style="font-size:10px; opacity:0.8;">🌙</span>
+                <label class="theme-switch">
+                    <input type="checkbox" id="themeToggle" onchange="toggleTheme()">
+                    <span class="slider"></span>
+                </label>
+            </div>
             <button onclick="save()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:5px 10px; border-radius:12px; cursor:pointer; font-size:11px;">🔄 Sync</button>
-            <button onclick="toggleTheme()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:5px 10px; border-radius:12px; cursor:pointer; font-size:11px;">🌙 Theme</button>
-            <button onclick="logout()" style="background:rgba(255, 71, 87, 0.2); border:none; color:white; padding:5px 10px; border-radius:12px; cursor:pointer; font-size:11px;">Logout</button>
+            <button onclick="triggerLogout()" style="background:rgba(255, 71, 87, 0.2); border:none; color:white; padding:5px 10px; border-radius:12px; cursor:pointer; font-size:11px;">Logout</button>
         </div>
     </header>
 
@@ -292,7 +269,7 @@
         <div id="overview" class="section">
             <div class="grid-stats">
                 <div class="card income">Income<br><span id="totalIncome">₱0.00</span></div>
-                <div class="card biz-profit">Biz Profit<br><span id="totalBizProfit">₱0.00</span></div>
+                <div class="card biz-profit">Net Business Profit (All-Time)<br><span id="totalBizProfit">₱0.00</span></div>
                 <div class="card expense">Budgeted<br><span id="totalBudgeted">₱0.00</span></div>
                 <div class="card unbudget">Unbudgeted<br><span id="totalUnbudgeted">₱0.00</span></div>
                 <div class="card liability">Liability<br><span id="totalLiability">₱0.00</span></div>
@@ -305,42 +282,31 @@
         </div>
 
         <div id="business-hub" class="section">
-            <h3 style="margin-top:0;">Business Performance Intelligence</h3>
+            <h3 style="margin-top:0;">Business Performance Intelligence (Lifetime)</h3>
             <div class="sum-grid">
-                <div class="sum-card"><div>Business Revenue</div><div id="hubBizRev" style="color:var(--primary); font-size:20px; font-weight:800;">₱0.00</div></div>
+                <div class="sum-card"><div>Lifetime Revenue</div><div id="hubBizRev" style="color:var(--primary); font-size:20px; font-weight:800;">₱0.00</div></div>
                 <div class="sum-card"><div>Net Business Profit</div><div id="hubBizNet" style="color:var(--success); font-size:20px; font-weight:800;">₱0.00</div></div>
-                <div class="sum-card"><div>Profit Margin</div><div id="hubMargin" style="color:var(--warning); font-size:20px; font-weight:800;">0%</div></div>
-                <div class="sum-card"><div>Est. Runway</div><div id="hubRunway" style="color:#6c5ce7; font-size:20px; font-weight:800;">0 Mos</div></div>
+                <div class="sum-card"><div>Lifetime Margin</div><div id="hubMargin" style="color:var(--warning); font-size:20px; font-weight:800;">0%</div></div>
+                <div class="sum-card" style="border: 1px solid var(--primary); background: rgba(44, 123, 229, 0.05);"><div>Current Balance</div><div id="hubLifetimeBal" style="color:var(--primary); font-size:20px; font-weight:800;">₱0.00</div></div>
             </div>
-            
             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px; margin-top:20px;">
-                <div class="note-card">
-                    <h4 style="margin:0 0 10px 0; color:var(--primary);">Business Expenses Analysis</h4>
-                    <div id="bizExpenseBreakdown" style="font-size:13px; line-height:2;">
-                        No business expenses recorded in this period.
-                    </div>
-                </div>
-                <div class="note-card">
-                    <h4 style="margin:0 0 10px 0; color:var(--success);">Top Harvest Accounts</h4>
-                    <div id="topHarvestsList" style="font-size:13px; line-height:2;">
-                        No active harvest accounts.
-                    </div>
-                </div>
+                <div class="note-card"><h4 style="margin:0 0 10px 0; color:var(--primary);">Lifetime Expense Analysis</h4><div id="bizExpenseBreakdown" style="font-size:13px; line-height:2;">No business expenses recorded.</div></div>
+                <div class="note-card"><h4 style="margin:0 0 10px 0; color:var(--success);">Top Harvest Accounts</h4><div id="topHarvestsList" style="font-size:13px; line-height:2;">No active harvest accounts.</div></div>
             </div>
         </div>
 
         <div id="harvest" class="section">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
                 <h3>Harvest Accounts</h3>
-                <div style="display:flex; gap:10px;">
+                <div style="display:flex; align-items:center; gap:15px;">
                     <button class="add-btn" style="background:var(--success)" onclick="openAddModal('harvest')">+ New Account</button>
                     <button class="add-btn" style="background:var(--danger)" onclick="openAddModal('harvest_expense')">+ Add Expense</button>
                 </div>
             </div>
             <div class="grid-stats" style="margin-bottom: 25px;">
-                <div class="card card-trans" style="--accent-color: var(--primary);"><small>Revenue</small><span id="harvTotalRev">₱0.00</span></div>
-                <div class="card card-trans" style="--accent-color: var(--danger);"><small>Expenses</small><span id="harvTotalExp">₱0.00</span></div>
-                <div class="card card-trans" style="--accent-color: var(--success);"><small>Net Profit</small><span id="harvTotalNet">₱0.00</span></div>
+                <div class="card card-trans" style="--accent-color: var(--primary);"><small>Total Revenue</small><span id="harvTotalRev">₱0.00</span></div>
+                <div class="card card-trans" style="--accent-color: var(--danger);"><small>Total Expenses</small><span id="harvTotalExp">₱0.00</span></div>
+                <div class="card card-trans" style="--accent-color: var(--success);"><small>Net Business Profit</small><span id="harvTotalNet">₱0.00</span></div>
             </div>
             <div id="harvestContainer"></div>
         </div>
@@ -415,6 +381,14 @@
     </div>
 </div>
 
+<div id="logoutConfirmModal" class="confirm-overlay">
+    <div class="modal-content" style="text-align:center;">
+        <h3 style="color:var(--danger);">Logout?</h3>
+        <p style="font-size:14px; color:#888;">Are you sure you want to exit the dashboard?</p>
+        <div class="btn-group"><button onclick="closeModal('logoutConfirmModal')" class="btn-cancel">Cancel</button><button onclick="logout()" class="btn-save" style="background:var(--danger);">Logout</button></div>
+    </div>
+</div>
+
 <div id="resetModal" class="confirm-overlay">
     <div class="modal-content" style="text-align:center;">
         <h3 style="color:var(--danger);">Wipe System Data?</h3>
@@ -429,15 +403,7 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxHKIEGfJHIb3R4z25q7
 let incomes=[], expenses=[], unbudgeted=[], liabilities=[], harvests=[], harvestTransactions=[], contributions=[], businessNotes=[], myChart, myTrendChart, currentAddType = '', editId = null, deleteTgt={};
 const fullMonths=["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-// --- KEYBOARD LISTENERS ---
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        if (document.getElementById("loginOverlay").style.display !== "none") checkLogin();
-        else if (document.getElementById("addModal").style.display === "flex") processAdd();
-    }
-});
-
-// --- SECURITY LOGIC: AUTO-LOGOUT ---
+// --- SECURITY LOGIC ---
 function updateActivity() { sessionStorage.setItem("lastActivity", Date.now()); }
 document.addEventListener('click', updateActivity);
 document.addEventListener('keypress', updateActivity);
@@ -445,20 +411,23 @@ document.addEventListener('keypress', updateActivity);
 function checkTimeout() {
     const last = sessionStorage.getItem("lastActivity");
     const ONE_HOUR = 3600000; 
-    if (sessionStorage.getItem("isLoggedIn") === "true" && last && (Date.now() - last > ONE_HOUR)) {
-        logout();
-    }
+    if (sessionStorage.getItem("isLoggedIn") === "true" && last && (Date.now() - last > ONE_HOUR)) { logout(); }
 }
 setInterval(checkTimeout, 10000); 
 
 async function load() {
-    if(sessionStorage.getItem("isLoggedIn") === "true") { 
+    const isLogged = sessionStorage.getItem("isLoggedIn") === "true";
+    if(isLogged) { 
         document.getElementById("loginOverlay").style.display="none"; 
         document.getElementById("mainApp").style.display="block"; 
         updateActivity();
     }
-    applyTheme(localStorage.getItem("theme") || "light");
     
+    // Set theme and toggle state
+    const currentTheme = localStorage.getItem("theme") || "light";
+    applyTheme(currentTheme);
+    document.getElementById('themeToggle').checked = (currentTheme === "dark");
+
     try {
         const res = await fetch(SCRIPT_URL);
         const data = await res.json();
@@ -491,6 +460,7 @@ function exportData() {
     a.href = url; a.download = `Budget_Backup_${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
     showToast("Exported JSON");
+    if(window.innerWidth<768) toggleSidebar();
 }
 
 function importData(event) {
@@ -505,6 +475,7 @@ function importData(event) {
                 harvests = data.harvests || []; harvestTransactions = data.harvestTransactions || [];
                 contributions = data.contributions || []; businessNotes = data.businessNotes || [];
                 showToast("Imported Successfully"); save();
+                if(window.innerWidth<768) toggleSidebar();
             } else { showToast("Invalid data format", true); }
         } catch (err) { showToast("Failed to parse file", true); }
     };
@@ -521,26 +492,29 @@ function render(){
     document.getElementById("totalLiability").innerText=formatAmount(lia); 
     document.getElementById("totalSavings").innerText=formatAmount(rem);
 
-    const fHarvests = filterData(harvests);
-    const fHarvTrans = filterData(harvestTransactions);
-
-    let totalRevenue = fHarvests.reduce((a, b) => a + b.amount, 0);
-    let totalExpenses = fHarvTrans.reduce((a, b) => a + b.amount, 0);
-    let netProfit = totalRevenue - totalExpenses;
-    let margin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : 0;
-    let runway = totalExpenses > 0 ? (netProfit / (totalExpenses / Math.max(1, fHarvTrans.length))).toFixed(1) : "∞";
-
+    const curMonth = monthSel.value, curYear = yearSel.value;
+    let totalRevenue = harvests.reduce((a, b) => a + b.amount, 0), totalExpenses = harvestTransactions.reduce((a, b) => a + b.amount, 0);
+    let netProfit = totalRevenue - totalExpenses, margin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : 0;
+    
     document.getElementById("totalBizProfit").innerText = formatAmount(netProfit);
     document.getElementById("hubBizRev").innerText = formatAmount(totalRevenue);
     document.getElementById("hubBizNet").innerText = formatAmount(netProfit);
     document.getElementById("hubMargin").innerText = margin + "%";
-    document.getElementById("hubRunway").innerText = runway + " Mos";
+    document.getElementById("hubLifetimeBal").innerText = formatAmount(netProfit);
     document.getElementById("harvTotalRev").innerText = formatAmount(totalRevenue);
     document.getElementById("harvTotalExp").innerText = formatAmount(totalExpenses);
     document.getElementById("harvTotalNet").innerText = formatAmount(netProfit);
 
-    // Business Intelligence Lists
-    document.getElementById("topHarvestsList").innerHTML = fHarvests.sort((a,b)=>b.amount-a.amount).slice(0,3).map(h => `<div style="display:flex; justify-content:space-between;"><span>${h.desc}</span><b>${formatAmount(h.amount)}</b></div>`).join('') || "No active accounts.";
+    const fHarvests = harvests.filter(h => {
+        const accountMatches = (new Date(h.date).getMonth() == curMonth || curMonth === "all") && new Date(h.date).getFullYear() == curYear;
+        const hasTransactionInPeriod = harvestTransactions.some(t => {
+            let td = new Date(t.date);
+            return t.harvestId === h.id && (td.getMonth() == curMonth || curMonth === "all") && td.getFullYear() == curYear;
+        });
+        return accountMatches || hasTransactionInPeriod;
+    });
+
+    document.getElementById("topHarvestsList").innerHTML = harvests.sort((a,b)=>b.amount-a.amount).slice(0,3).map(h => `<div style="display:flex; justify-content:space-between;"><span>${h.desc}</span><b>${formatAmount(h.amount)}</b></div>`).join('') || "No active accounts.";
     
     let jConTotal = contributions.filter(c => c.contributor === 'Jerome').reduce((a,b) => a + b.amount, 0);
     let nConTotal = contributions.filter(c => c.contributor === 'Jennifer').reduce((a,b) => a + b.amount, 0);
@@ -576,12 +550,11 @@ function render(){
     document.getElementById("unTable").innerHTML=fUn.map((d,i)=> mapper('unbudget', 'un')(d, unbudgeted.indexOf(d))).join('');
     document.getElementById("liaTable").innerHTML=fLia.map((d,i)=> mapper('liability', 'lia')(d, liabilities.indexOf(d))).join('');
     
-    updateCharts(bud, unb, lia, rem); renderHarvests(fHarvests, fHarvTrans); renderNotes(); updateSavingsTab();
+    updateCharts(bud, unb, lia, rem); renderHarvests(fHarvests); renderNotes(); updateSavingsTab();
 }
 
 function switchSection(id, el){
-    const genTabs = ['overview', 'income', 'budget', 'unbudget', 'liability', 'savings'];
-    const bizTabs = ['business-hub', 'contribution', 'profitshare', 'harvest', 'business-notes'];
+    const genTabs = ['overview', 'income', 'budget', 'unbudget', 'liability', 'savings'], bizTabs = ['business-hub', 'contribution', 'profitshare', 'harvest', 'business-notes'];
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active')); 
     const target = document.getElementById(id); if(target) target.classList.add('active');
     if(genTabs.includes(id)) {
@@ -619,9 +592,18 @@ function showToast(m, isError = false) { const t = document.getElementById("toas
 function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('active'); }
 function closeModal(id){ document.getElementById(id).style.display="none"; editId = null; }
 function closeConfirm(){ document.getElementById('deleteConfirmModal').style.display='none'; }
+function triggerLogout() { document.getElementById('logoutConfirmModal').style.display = 'flex'; }
 function logout() { sessionStorage.removeItem("isLoggedIn"); sessionStorage.removeItem("lastActivity"); location.reload(); }
-function applyTheme(t) { document.body.setAttribute("data-theme", t); localStorage.setItem("theme", t); }
-function toggleTheme(){ applyTheme(document.body.getAttribute("data-theme") === "dark" ? "light" : "dark"); render(); }
+
+function applyTheme(t) { 
+    document.body.setAttribute("data-theme", t); 
+    localStorage.setItem("theme", t); 
+}
+function toggleTheme(){ 
+    const newTheme = document.getElementById('themeToggle').checked ? "dark" : "light";
+    applyTheme(newTheme); 
+    render(); 
+}
 
 const monthSel=document.getElementById("month"), yearSel=document.getElementById("year");
 fullMonths.forEach((m, i) => monthSel.innerHTML+=`<option value="${i}">${m}</option>`);
@@ -662,13 +644,22 @@ function openAddModal(type, existingId = null) {
         document.getElementById('standardFields').style.display = 'block'; 
         document.getElementById('noteFields').style.display = 'none';
         if(existingId !== null) {
-            let dataArr = (type==='income'?incomes:type==='budget'?expenses:type==='unbudget'?unbudgeted:type==='liability'?liabilities:type==='contribution'?contributions:harvests);
+            let dataArr;
+            if(type==='income') dataArr = incomes;
+            else if(type==='budget') dataArr = expenses;
+            else if(type==='unbudget') dataArr = unbudgeted;
+            else if(type==='liability') dataArr = liabilities;
+            else if(type==='contribution') dataArr = contributions;
+            else if(type==='harvest') dataArr = harvests;
+            else if(type==='harvest_expense') dataArr = harvestTransactions;
+
             const entry = dataArr[existingId];
             document.getElementById('modalDate').value = entry.date;
             document.getElementById('modalDesc').value = entry.desc || '';
             document.getElementById('modalAmount').value = entry.amount;
             if(type === 'budget') document.getElementById('modalCat').value = entry.cat;
             if(type === 'contribution') document.getElementById('modalContributor').value = entry.contributor;
+            if(type === 'harvest_expense') document.getElementById('modalAccountSelect').value = entry.harvestId;
         } else {
             document.getElementById('modalDate').value = new Date().toISOString().split('T')[0];
             document.getElementById('modalDesc').value = ''; document.getElementById('modalAmount').value = '';
@@ -688,10 +679,6 @@ function processAdd() {
     } else {
         const date = document.getElementById('modalDate').value, desc = document.getElementById('modalDesc').value, amt = Number(document.getElementById('modalAmount').value);
         if(!date || !amt) return;
-        const newData = {date, desc, amount: amt};
-        if(currentAddType === 'budget') newData.cat = document.getElementById('modalCat').value;
-        if(currentAddType === 'contribution') newData.contributor = document.getElementById('modalContributor').value;
-        if(currentAddType === 'harvest_expense') newData.harvestId = document.getElementById('modalAccountSelect').value;
         
         let targetArr;
         if(currentAddType === 'income') targetArr = incomes;
@@ -699,10 +686,23 @@ function processAdd() {
         else if(currentAddType === 'unbudget') targetArr = unbudgeted;
         else if(currentAddType === 'liability') targetArr = liabilities;
         else if(currentAddType === 'contribution') targetArr = contributions;
-        else if(currentAddType === 'harvest') { newData.id = (editId !== null ? harvests[editId].id : Date.now().toString()); targetArr = harvests; }
+        else if(currentAddType === 'harvest') targetArr = harvests;
         else if(currentAddType === 'harvest_expense') targetArr = harvestTransactions;
-        
-        if(editId !== null) targetArr[editId] = newData; else targetArr.push(newData);
+
+        if(editId !== null) {
+            const existing = targetArr[editId];
+            existing.date = date; existing.desc = desc; existing.amount = amt;
+            if(currentAddType === 'budget') existing.cat = document.getElementById('modalCat').value;
+            if(currentAddType === 'contribution') existing.contributor = document.getElementById('modalContributor').value;
+            if(currentAddType === 'harvest_expense') existing.harvestId = document.getElementById('modalAccountSelect').value;
+        } else {
+            const newData = { date, desc, amount: amt };
+            if(currentAddType === 'budget') newData.cat = document.getElementById('modalCat').value;
+            if(currentAddType === 'contribution') newData.contributor = document.getElementById('modalContributor').value;
+            if(currentAddType === 'harvest_expense') newData.harvestId = document.getElementById('modalAccountSelect').value;
+            if(currentAddType === 'harvest') newData.id = Date.now().toString();
+            targetArr.push(newData);
+        }
     }
     save(); closeModal('addModal');
 }
@@ -752,33 +752,25 @@ function updateCharts(b, u, l, r) {
     myTrendChart = new Chart(ctxTrend, { type: 'bar', data: { labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], datasets: [{ label: 'Income', data: monthlyIncome, backgroundColor: '#00b894' }, { label: 'Expense', data: monthlyExpense, backgroundColor: '#ff4757' }] }, options: { maintainAspectRatio: false } });
 }
 
-function renderHarvests(filteredAccs, filteredTrans) {
+function renderHarvests(filteredAccs) {
     const container = document.getElementById('harvestContainer');
-    if (filteredAccs.length === 0) { container.innerHTML = `<p style="text-align:center; color:#888;">No harvest accounts for this period.</p>`; return; }
+    if (filteredAccs.length === 0) { container.innerHTML = `<p style="text-align:center; color:#888;">No harvest accounts matching filter.</p>`; return; }
     
     container.innerHTML = filteredAccs.map((acc, idx) => {
-        const trans = filteredTrans.filter(t => t.harvestId === acc.id);
-        const accExpenseSum = trans.reduce((a, b) => a + b.amount, 0);
-        const profit = acc.amount - accExpenseSum;
-        const list = trans.map(t => {
+        const allTrans = harvestTransactions.filter(t => t.harvestId === acc.id);
+        const list = allTrans.sort((a,b) => new Date(b.date) - new Date(a.date)).map(t => {
             const globalIdx = harvestTransactions.indexOf(t);
-            return `<div style="font-size:12px; padding:4px 0; border-bottom:1px dashed #eee; display:flex; justify-content:space-between;">
-                        <span>${t.date} - ${t.desc}</span>
-                        <span style="color:var(--danger)">-${formatAmount(t.amount)} 
-                            <button class="action-delete" style="text-decoration:none;" onclick="deleteItem('har_trans', ${globalIdx})">×</button>
-                        </span>
-                    </div>`;
+            return `<div style="font-size:12px; padding:4px 0; border-bottom:1px dashed #eee; display:flex; justify-content:space-between;"><span>${t.date} - ${t.desc}</span><span style="color:var(--danger)">-${formatAmount(t.amount)} <button class="action-delete" style="text-decoration:none;" onclick="deleteItem('har_trans', ${globalIdx})">×</button></span></div>`;
         }).join('');
+        const totalAccExp = allTrans.reduce((a,b) => a+b.amount, 0), runningBalance = acc.amount - totalAccExp;
 
         return `<div class="note-card" style="border-left: 4px solid var(--success);">
-                    <strong style="color:var(--primary); font-size:16px;">${acc.desc}</strong><br>
-                    <small>Starting: ${formatAmount(acc.amount)}</small>
-                    <div style="margin:10px 0; background:rgba(0,0,0,0.02); padding:10px; border-radius:8px;">${list || 'No expenses for this period'}</div>
-                    <div><strong>Profit: ${formatAmount(profit)}</strong></div>
-                    <div style="margin-top:10px;">
-                        <button class="action-edit" onclick="openAddModal('harvest', ${harvests.indexOf(acc)})">Edit</button>
-                        <button class="action-delete" style="margin-left:10px;" onclick="deleteItem('har_acc', ${harvests.indexOf(acc)})">Delete</button>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div><strong style="color:var(--primary); font-size:16px;">${acc.desc}</strong><br><small>Created: ${acc.date} | Initial: ${formatAmount(acc.amount)}</small></div>
+                        <div style="text-align:right;"><div style="font-size:11px; color:#888;">Account Running Balance</div><strong style="color:${runningBalance < 0 ? 'var(--danger)' : 'var(--success)'}">${formatAmount(runningBalance)}</strong></div>
                     </div>
+                    <div style="margin:10px 0; background:rgba(0,0,0,0.02); padding:10px; border-radius:8px;"><div style="font-size:10px; text-transform:uppercase; color:#888; margin-bottom:5px;">Transaction History</div>${list || '<div style="color:#bbb; font-style:italic; font-size:11px;">No transactions.</div>'}</div>
+                    <div style="margin-top:10px; display:flex; gap:10px;"><button class="action-edit" onclick="openAddModal('harvest', ${harvests.indexOf(acc)})">Edit Account</button><button class="action-delete" onclick="deleteItem('har_acc', ${harvests.indexOf(acc)})">Delete</button></div>
                 </div>`;
     }).join('');
 }
