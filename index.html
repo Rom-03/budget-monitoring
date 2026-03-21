@@ -20,7 +20,30 @@
 
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; color: var(--text); overflow-x: hidden; transition: 0.3s; }
 
-        /* --- THEME TOGGLE SWITCH --- */
+        .tab-total-banner {
+            background: var(--card-bg);
+            padding: 15px 20px;
+            border-radius: 12px;
+            border-left: 5px solid var(--primary);
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .tab-total-banner .banner-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .tab-total-banner .banner-value {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text);
+        }
+
         .theme-switch-wrapper { display: flex; align-items: center; gap: 8px; }
         .theme-switch {
             position: relative; display: inline-block; width: 34px; height: 18px;
@@ -37,7 +60,6 @@
         input:checked + .slider { background-color: var(--success); }
         input:checked + .slider:before { transform: translateX(16px); }
 
-        /* --- LOGIN DESIGN --- */
         #loginOverlay {
             position: fixed; inset: 0; 
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
@@ -77,7 +99,6 @@
         .btn-unlock:hover { background: #1a5bb4; transform: translateY(-1px); }
         .btn-unlock:disabled { background: #4b6584; cursor: not-allowed; transform: none; }
 
-        /* Loading Spinner */
         .spinner {
             width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%;
             border-top-color: #fff; animation: spin 0.8s linear infinite; display: none;
@@ -196,7 +217,6 @@
         .sum-card { background: var(--card-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--border); text-align: center; }
         .note-card { background: var(--card-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 15px; box-shadow: var(--shadow); }
 
-        /* --- CALCULATOR UI --- */
         #calcContainer {
             position: fixed; bottom: 20px; right: 20px; width: 220px; background: var(--card-bg);
             border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow);
@@ -252,11 +272,11 @@
             <div class="nav-item" id="nav-business-hub" onclick="switchSection('business-hub', this)">💼 Business</div>
         </div>
         <div class="sidebar-footer">
-            <div class="sidebar-link-btn util-link" onclick="openPinModal()">🔑 Change Dashboard PIN</div>
-            <div class="sidebar-link-btn util-link" onclick="exportData()">📤 Export Data (.json)</div>
-            <div class="sidebar-link-btn util-link" onclick="document.getElementById('importInput').click()">📥 Import Data (.json)</div>
+            <div class="sidebar-link-btn util-link" onclick="openPinModal()">🔑 Change PIN</div>
+            <div class="sidebar-link-btn util-link" onclick="exportData()">📤 Export Data</div>
+            <div class="sidebar-link-btn util-link" onclick="document.getElementById('importInput').click()">📥 Import Data</Datalist></div>
             <input type="file" id="importInput" style="display:none" onchange="importData(event)" accept=".json">
-            <div class="sidebar-link-btn reset-link" onclick="triggerFullReset()">⚠️ Reset System Data</div>
+            <div class="sidebar-link-btn reset-link" onclick="triggerFullReset()">⚠️ Reset Data</div>
         </div>
     </nav>
 
@@ -355,14 +375,26 @@
         </div>
 
         <div id="income" class="section">
+            <div class="tab-total-banner">
+                <span class="banner-label">Filtered Income Total</span>
+                <span class="banner-value" id="tabTotalIncomeDisplay">₱0.00</span>
+            </div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3>Income</h3><button class="add-btn" onclick="openAddModal('income')">+ Add Income</button></div>
             <div class="table-container"><table><thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Action</th></tr></thead><tbody id="incomeTable"></tbody></table></div>
         </div>
         <div id="budget" class="section">
+            <div class="tab-total-banner" style="border-left-color: var(--danger);">
+                <span class="banner-label">Filtered Budgeted Total</span>
+                <span class="banner-value" id="tabTotalBudgetedDisplay">₱0.00</span>
+            </div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3>Budgeted</h3><button class="add-btn" onclick="openAddModal('budget')">+ Add Expense</button></div>
             <div class="table-container"><table><thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Action</th></tr></thead><tbody id="expenseTable"></tbody></table></div>
         </div>
         <div id="unbudget" class="section">
+            <div class="tab-total-banner" style="border-left-color: var(--warning);">
+                <span class="banner-label">Filtered Unbudgeted Total</span>
+                <span class="banner-value" id="tabTotalUnbudgetedDisplay">₱0.00</span>
+            </div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3>Unbudgeted</h3><button class="add-btn" onclick="openAddModal('unbudget')">+ Add Entry</button></div>
             <div class="table-container"><table><thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Action</th></tr></thead><tbody id="unTable"></tbody></table></div>
         </div>
@@ -489,8 +521,6 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxHKIEGfJHIb3R4z25q7Yn9Sds5-WsCh8De8ehDh25PR7JPWDSfkKfRHKQ1Na6rTJteqQ/exec";
-
-// --- SECURITY LOGIC (HASHING) ---
 const DEFAULT_PIN_HASH = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4";
 
 async function hashPin(pin) {
@@ -506,24 +536,27 @@ async function checkLogin() {
     const text = document.getElementById('loginText');
     const inputPin = document.getElementById("passInput").value;
     
-    let storedPinHash = localStorage.getItem("dashPinHash");
-    const legacyPin = localStorage.getItem("dashPin");
-    if(!storedPinHash && legacyPin) {
-        storedPinHash = await hashPin(legacyPin);
-        localStorage.setItem("dashPinHash", storedPinHash);
-        localStorage.removeItem("dashPin");
-    }
-
-    if(!storedPinHash) storedPinHash = DEFAULT_PIN_HASH;
-
     btn.disabled = true;
     spinner.style.display = 'inline-block';
     text.innerText = 'Authenticating...';
 
+    // Fetch the PIN from Cloud to ensure it's synced across all devices
+    let cloudHash = DEFAULT_PIN_HASH;
+    try {
+        const res = await fetch(SCRIPT_URL);
+        const data = await res.json();
+        if(data.pinHash) {
+            cloudHash = data.pinHash;
+            localStorage.setItem("dashPinHash", cloudHash);
+        }
+    } catch(e) {
+        cloudHash = localStorage.getItem("dashPinHash") || DEFAULT_PIN_HASH;
+    }
+
     const inputHash = await hashPin(inputPin);
 
     setTimeout(() => {
-        if(inputHash === storedPinHash) { 
+        if(inputHash === cloudHash) { 
             sessionStorage.setItem("isLoggedIn", "true"); 
             sessionStorage.setItem("lastActivity", Date.now());
             localStorage.setItem("activeTab", "overview"); 
@@ -536,15 +569,14 @@ async function checkLogin() {
             const card = document.querySelector('.login-card');
             card.style.animation = 'none'; void card.offsetWidth; card.style.animation = 'shake 0.4s';
         }
-    }, 1200); 
+    }, 800); 
 }
 
-// --- APP CORE ---
-let incomes=[], expenses=[], unbudgeted=[], liabilities=[], harvests=[], harvestTransactions=[], contributions=[], businessNotes=[], myChart, myTrendChart, currentAddType = '', editId = null, deleteTgt={};
+let incomes=[], expenses=[], unbudgeted=[], liabilities=[], harvests=[], harvestTransactions=[], contributions=[], businessNotes=[], pinHash = DEFAULT_PIN_HASH;
+let myChart, myTrendChart, currentAddType = '', editId = null, deleteTgt={};
 const fullMonths=["January","February","March","April","May","June","July","August","September","October","November","December"];
 let showAllHarvests = false; 
 
-// Keyboard Listeners
 document.getElementById('passInput').addEventListener('keypress', function(e) { if(e.key === 'Enter') checkLogin(); });
 document.getElementById('addModal').addEventListener('keypress', function(e) { if(e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') processAdd(); });
 
@@ -553,10 +585,17 @@ async function executeChangePin() {
     const nxt = document.getElementById('newPin').value;
     let storedPinHash = localStorage.getItem("dashPinHash") || DEFAULT_PIN_HASH;
     const curHash = await hashPin(cur);
+    
     if(curHash !== storedPinHash) { showToast("Current PIN incorrect", true); return; }
     if(nxt.length !== 4) { showToast("PIN must be 4 digits", true); return; }
+    
     const newHash = await hashPin(nxt);
+    pinHash = newHash;
     localStorage.setItem("dashPinHash", newHash);
+    
+    // Cloud sync the PIN change so all other devices receive it
+    await save(); 
+    
     showToast("PIN Updated successfully");
     closeModal('pinModal');
     document.getElementById('curPin').value = '';
@@ -593,6 +632,10 @@ async function load() {
             liabilities = data.liabilities; harvests = data.harvests; 
             harvestTransactions = data.harvestTransactions; contributions = data.contributions;
             businessNotes = data.businessNotes;
+            if(data.pinHash) {
+                pinHash = data.pinHash;
+                localStorage.setItem("dashPinHash", pinHash);
+            }
         }
     } catch (e) { console.log("Cloud load failed."); }
     
@@ -601,7 +644,7 @@ async function load() {
 }
 
 async function save() {
-    const data = { incomes, expenses, unbudgeted, liabilities, harvests, harvestTransactions, contributions, businessNotes };
+    const data = { incomes, expenses, unbudgeted, liabilities, harvests, harvestTransactions, contributions, businessNotes, pinHash };
     try {
         await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(data), mode: 'no-cors' });
         render();
@@ -623,6 +666,10 @@ function render(){
     document.getElementById("totalUnbudgeted").innerText=formatAmount(unb); 
     document.getElementById("totalLiability").innerText=formatAmount(lia); 
     document.getElementById("totalSavings").innerText=formatAmount(rem);
+
+    document.getElementById("tabTotalIncomeDisplay").innerText = formatAmount(inc);
+    document.getElementById("tabTotalBudgetedDisplay").innerText = formatAmount(bud);
+    document.getElementById("tabTotalUnbudgetedDisplay").innerText = formatAmount(unb);
 
     const curMonth = monthSel.value, curYear = yearSel.value;
     let totalRevenue = harvests.reduce((a, b) => a + b.amount, 0), totalExpenses = harvestTransactions.reduce((a, b) => a + b.amount, 0);
@@ -826,7 +873,7 @@ document.getElementById('confirmBtn').onclick = () => {
 
 function triggerFullReset() { document.getElementById('resetModal').style.display = 'flex'; }
 async function executeFullReset() { 
-    const empty = { incomes:[], expenses:[], unbudgeted:[], liabilities:[], harvests:[], harvestTransactions:[], contributions:[], businessNotes:[] };
+    const empty = { incomes:[], expenses:[], unbudgeted:[], liabilities:[], harvests:[], harvestTransactions:[], contributions:[], businessNotes:[], pinHash: DEFAULT_PIN_HASH };
     await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(empty) });
     localStorage.clear(); sessionStorage.clear(); location.reload(); 
 }
@@ -935,7 +982,6 @@ function renderNotes() {
     container.innerHTML = html;
 }
 
-// --- CALCULATOR & DRAG ---
 let calcExpression = '';
 function toggleCalc() { const calc = document.getElementById('calcContainer'); calc.style.display = (calc.style.display === 'flex') ? 'none' : 'flex'; }
 function minimizeCalc() { document.getElementById('calcContainer').classList.toggle('minimized'); }
