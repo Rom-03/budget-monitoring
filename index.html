@@ -196,7 +196,7 @@
         .sum-card { background: var(--card-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--border); text-align: center; }
         .note-card { background: var(--card-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 15px; box-shadow: var(--shadow); }
 
-        /* --- CALCULATOR UI (Draggable & Minimalist) --- */
+        /* --- CALCULATOR UI --- */
         #calcContainer {
             position: fixed; bottom: 20px; right: 20px; width: 220px; background: var(--card-bg);
             border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow);
@@ -252,6 +252,7 @@
             <div class="nav-item" id="nav-business-hub" onclick="switchSection('business-hub', this)">💼 Business</div>
         </div>
         <div class="sidebar-footer">
+            <div class="sidebar-link-btn util-link" onclick="openPinModal()">🔑 Change Dashboard PIN</div>
             <div class="sidebar-link-btn util-link" onclick="exportData()">📤 Export Data (.json)</div>
             <div class="sidebar-link-btn util-link" onclick="document.getElementById('importInput').click()">📥 Import Data (.json)</div>
             <input type="file" id="importInput" style="display:none" onchange="importData(event)" accept=".json">
@@ -415,6 +416,24 @@
     </div>
 </div>
 
+<div id="pinModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>Change Security PIN</h3>
+        <div class="form-group">
+            <label class="form-label">Current PIN</label>
+            <input type="password" id="curPin" maxlength="4" placeholder="••••">
+        </div>
+        <div class="form-group">
+            <label class="form-label">New 4-Digit PIN</label>
+            <input type="password" id="newPin" maxlength="4" placeholder="••••">
+        </div>
+        <div class="btn-group">
+            <button onclick="closeModal('pinModal')" class="btn-cancel">Cancel</button>
+            <button onclick="executeChangePin()" class="btn-save">Update PIN</button>
+        </div>
+    </div>
+</div>
+
 <div id="deleteConfirmModal" class="confirm-overlay">
     <div class="modal-content" style="text-align:center;">
         <h3 style="color:var(--danger);">Delete Entry?</h3>
@@ -471,12 +490,79 @@
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxHKIEGfJHIb3R4z25q7Yn9Sds5-WsCh8De8ehDh25PR7JPWDSfkKfRHKQ1Na6rTJteqQ/exec";
 
+// --- SECURITY LOGIC (HASHING) ---
+const DEFAULT_PIN_HASH = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4";
+
+async function hashPin(pin) {
+    const msgUint8 = new TextEncoder().encode(pin);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function checkLogin() { 
+    const btn = document.getElementById('loginBtn');
+    const spinner = document.getElementById('loginSpinner');
+    const text = document.getElementById('loginText');
+    const inputPin = document.getElementById("passInput").value;
+    
+    let storedPinHash = localStorage.getItem("dashPinHash");
+    const legacyPin = localStorage.getItem("dashPin");
+    if(!storedPinHash && legacyPin) {
+        storedPinHash = await hashPin(legacyPin);
+        localStorage.setItem("dashPinHash", storedPinHash);
+        localStorage.removeItem("dashPin");
+    }
+
+    if(!storedPinHash) storedPinHash = DEFAULT_PIN_HASH;
+
+    btn.disabled = true;
+    spinner.style.display = 'inline-block';
+    text.innerText = 'Authenticating...';
+
+    const inputHash = await hashPin(inputPin);
+
+    setTimeout(() => {
+        if(inputHash === storedPinHash) { 
+            sessionStorage.setItem("isLoggedIn", "true"); 
+            sessionStorage.setItem("lastActivity", Date.now());
+            localStorage.setItem("activeTab", "overview"); 
+            location.reload(); 
+        } else { 
+            btn.disabled = false;
+            spinner.style.display = 'none';
+            text.innerText = 'Unlock Dashboard';
+            showToast("Invalid Key", true);
+            const card = document.querySelector('.login-card');
+            card.style.animation = 'none'; void card.offsetWidth; card.style.animation = 'shake 0.4s';
+        }
+    }, 1200); 
+}
+
+// --- APP CORE ---
 let incomes=[], expenses=[], unbudgeted=[], liabilities=[], harvests=[], harvestTransactions=[], contributions=[], businessNotes=[], myChart, myTrendChart, currentAddType = '', editId = null, deleteTgt={};
 const fullMonths=["January","February","March","April","May","June","July","August","September","October","November","December"];
-
 let showAllHarvests = false; 
 
-// --- SECURITY LOGIC ---
+// Keyboard Listeners
+document.getElementById('passInput').addEventListener('keypress', function(e) { if(e.key === 'Enter') checkLogin(); });
+document.getElementById('addModal').addEventListener('keypress', function(e) { if(e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') processAdd(); });
+
+async function executeChangePin() {
+    const cur = document.getElementById('curPin').value;
+    const nxt = document.getElementById('newPin').value;
+    let storedPinHash = localStorage.getItem("dashPinHash") || DEFAULT_PIN_HASH;
+    const curHash = await hashPin(cur);
+    if(curHash !== storedPinHash) { showToast("Current PIN incorrect", true); return; }
+    if(nxt.length !== 4) { showToast("PIN must be 4 digits", true); return; }
+    const newHash = await hashPin(nxt);
+    localStorage.setItem("dashPinHash", newHash);
+    showToast("PIN Updated successfully");
+    closeModal('pinModal');
+    document.getElementById('curPin').value = '';
+    document.getElementById('newPin').value = '';
+}
+
 function updateActivity() { sessionStorage.setItem("lastActivity", Date.now()); }
 document.addEventListener('click', updateActivity);
 document.addEventListener('keypress', updateActivity);
@@ -495,7 +581,6 @@ async function load() {
         document.getElementById("mainApp").style.display="block"; 
         updateActivity();
     }
-    
     const currentTheme = localStorage.getItem("theme") || "light";
     applyTheme(currentTheme);
     document.getElementById('themeToggle').checked = (currentTheme === "dark");
@@ -524,39 +609,9 @@ async function save() {
     } catch (e) { showToast("Sync Failed", true); }
 }
 
-function exportData() {
-    const data = { incomes, expenses, unbudgeted, liabilities, harvests, harvestTransactions, contributions, businessNotes };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `Budget_Backup_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-    showToast("Exported JSON");
+function openPinModal() {
+    document.getElementById('pinModal').style.display = 'flex';
     if(window.innerWidth<768) toggleSidebar();
-}
-
-function importData(event) {
-    const file = event.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const data = JSON.parse(e.target.result);
-            if (data.incomes && data.harvests) {
-                incomes = data.incomes || []; expenses = data.expenses || [];
-                unbudgeted = data.unbudgeted || []; liabilities = data.liabilities || [];
-                harvests = data.harvests || []; harvestTransactions = data.harvestTransactions || [];
-                contributions = data.contributions || []; businessNotes = data.businessNotes || [];
-                showToast("Imported Successfully"); save();
-                if(window.innerWidth<768) toggleSidebar();
-            } else { showToast("Invalid data format", true); }
-        } catch (err) { showToast("Failed to parse file", true); }
-    };
-    reader.readAsText(file);
-}
-
-function toggleHarvestShowAll() {
-    showAllHarvests = document.getElementById('harvestShowAllToggle').checked;
-    render();
 }
 
 function render(){
@@ -652,37 +707,6 @@ function switchSection(id, el){
     localStorage.setItem("activeTab", id); render();
 }
 
-function checkLogin(){ 
-    const btn = document.getElementById('loginBtn');
-    const spinner = document.getElementById('loginSpinner');
-    const text = document.getElementById('loginText');
-    const pass = document.getElementById("passInput").value;
-
-    // Trigger Loading State
-    btn.disabled = true;
-    spinner.style.display = 'inline-block';
-    text.innerText = 'Authenticating...';
-
-    // Small delay to simulate "Security Check"
-    setTimeout(() => {
-        if(pass === "1234"){ 
-            sessionStorage.setItem("isLoggedIn", "true"); 
-            sessionStorage.setItem("lastActivity", Date.now());
-            localStorage.setItem("activeTab", "overview"); 
-            location.reload(); 
-        } else { 
-            // Reset state on failure
-            btn.disabled = false;
-            spinner.style.display = 'none';
-            text.innerText = 'Unlock Dashboard';
-            
-            showToast("Invalid Key", true);
-            const card = document.querySelector('.login-card');
-            card.style.animation = 'none'; void card.offsetWidth; card.style.animation = 'shake 0.4s';
-        }
-    }, 1500); 
-}
-
 function formatAmount(v){ return (v < 0 ? "-₱" : "₱") + Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:2}); }
 function showToast(m, isError = false) { const t = document.getElementById("toast"); t.innerText = m; t.classList.remove("error", "show"); void t.offsetWidth; if(isError) t.classList.add("error"); t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2500); }
 function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('active'); }
@@ -690,16 +714,8 @@ function closeModal(id){ document.getElementById(id).style.display="none"; editI
 function closeConfirm(){ document.getElementById('deleteConfirmModal').style.display='none'; }
 function triggerLogout() { document.getElementById('logoutConfirmModal').style.display = 'flex'; }
 function logout() { sessionStorage.removeItem("isLoggedIn"); sessionStorage.removeItem("lastActivity"); location.reload(); }
-
-function applyTheme(t) { 
-    document.body.setAttribute("data-theme", t); 
-    localStorage.setItem("theme", t); 
-}
-function toggleTheme(){ 
-    const newTheme = document.getElementById('themeToggle').checked ? "dark" : "light";
-    applyTheme(newTheme); 
-    render(); 
-}
+function applyTheme(t) { document.body.setAttribute("data-theme", t); localStorage.setItem("theme", t); }
+function toggleTheme(){ const newTheme = document.getElementById('themeToggle').checked ? "dark" : "light"; applyTheme(newTheme); render(); }
 
 const monthSel=document.getElementById("month"), yearSel=document.getElementById("year");
 fullMonths.forEach((m, i) => monthSel.innerHTML+=`<option value="${i}">${m}</option>`);
@@ -775,7 +791,6 @@ function processAdd() {
     } else {
         const date = document.getElementById('modalDate').value, desc = document.getElementById('modalDesc').value, amt = Number(document.getElementById('modalAmount').value);
         if(!date || !amt) return;
-        
         let targetArr;
         if(currentAddType === 'income') targetArr = incomes;
         else if(currentAddType === 'budget') targetArr = expenses;
@@ -804,7 +819,6 @@ function processAdd() {
 }
 
 function deleteItem(type, i) { deleteTgt = { type, idx: i }; document.getElementById('deleteConfirmModal').style.display = 'flex'; }
-
 document.getElementById('confirmBtn').onclick = () => {
     const map = { income: incomes, exp: expenses, un: unbudgeted, lia: liabilities, con: contributions, note: businessNotes, har_acc: harvests, har_trans: harvestTransactions };
     map[deleteTgt.type].splice(deleteTgt.idx, 1); closeConfirm(); save(); 
@@ -816,6 +830,38 @@ async function executeFullReset() {
     await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(empty) });
     localStorage.clear(); sessionStorage.clear(); location.reload(); 
 }
+
+function exportData() {
+    const data = { incomes, expenses, unbudgeted, liabilities, harvests, harvestTransactions, contributions, businessNotes };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `Budget_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    showToast("Exported JSON");
+    if(window.innerWidth<768) toggleSidebar();
+}
+
+function importData(event) {
+    const file = event.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.incomes && data.harvests) {
+                incomes = data.incomes || []; expenses = data.expenses || [];
+                unbudgeted = data.unbudgeted || []; liabilities = data.liabilities || [];
+                harvests = data.harvests || []; harvestTransactions = data.harvestTransactions || [];
+                contributions = data.contributions || []; businessNotes = data.businessNotes || [];
+                showToast("Imported Successfully"); save();
+                if(window.innerWidth<768) toggleSidebar();
+            } else { showToast("Invalid data format", true); }
+        } catch (err) { showToast("Failed to parse file", true); }
+    };
+    reader.readAsText(file);
+}
+
+function toggleHarvestShowAll() { showAllHarvests = document.getElementById('harvestShowAllToggle').checked; render(); }
 
 function updateSavingsTab() {
     const curY = yearSel.value, mode = document.getElementById("savingsFilter").value;
@@ -837,12 +883,10 @@ function updateCharts(b, u, l, r) {
     const ctx = document.getElementById('budgetChart').getContext('2d');
     if (myChart) myChart.destroy();
     myChart = new Chart(ctx, { type: 'doughnut', data: { labels: ['Budgeted', 'Unbudgeted', 'Debt', 'Saved'], datasets: [{ data: [b, u, l, r > 0 ? r : 0], backgroundColor: ['#2c7be5', '#e17055', '#6c5ce7', '#00cec9'], borderWidth: 0 }] }, options: { maintainAspectRatio: false } });
-    
     const curYear = yearSel.value;
     let monthlyIncome = Array(12).fill(0), monthlyExpense = Array(12).fill(0);
     const proc = (arr, tArr) => arr.forEach(it => { let d = new Date(it.date); if(d.getFullYear()==curYear) tArr[d.getMonth()] += it.amount; });
     proc(incomes, monthlyIncome); proc(expenses, monthlyExpense); proc(unbudgeted, monthlyExpense); proc(liabilities, monthlyExpense);
-    
     const ctxTrend = document.getElementById('monthlyTrendChart').getContext('2d');
     if (myTrendChart) myTrendChart.destroy();
     myTrendChart = new Chart(ctxTrend, { type: 'bar', data: { labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], datasets: [{ label: 'Income', data: monthlyIncome, backgroundColor: '#00b894' }, { label: 'Expense', data: monthlyExpense, backgroundColor: '#ff4757' }] }, options: { maintainAspectRatio: false } });
@@ -851,12 +895,9 @@ function updateCharts(b, u, l, r) {
 function renderHarvests(filteredAccs) {
     const container = document.getElementById('harvestContainer');
     const accListToRender = showAllHarvests ? harvests : filteredAccs;
-
     if (accListToRender.length === 0) { container.innerHTML = `<p style="text-align:center; color:#888;">No harvest accounts matching filter.</p>`; return; }
-    
     container.innerHTML = accListToRender.map((acc, idx) => {
         let allTrans = harvestTransactions.filter(t => t.harvestId === acc.id);
-        
         if(!showAllHarvests) {
             const curMonth = monthSel.value, curYear = yearSel.value;
             allTrans = allTrans.filter(t => {
@@ -864,14 +905,11 @@ function renderHarvests(filteredAccs) {
                 return (td.getMonth() == curMonth || curMonth === "all") && td.getFullYear() == curYear;
             });
         }
-
         const list = allTrans.sort((a,b) => new Date(b.date) - new Date(a.date)).map(t => {
             const globalIdx = harvestTransactions.indexOf(t);
             return `<div style="font-size:12px; padding:4px 0; border-bottom:1px dashed #eee; display:flex; justify-content:space-between;"><span>${t.date} - ${t.desc}</span><span style="color:var(--danger)">-${formatAmount(t.amount)} <button class="action-delete" style="text-decoration:none;" onclick="deleteItem('har_trans', ${globalIdx})">×</button></span></div>`;
         }).join('');
-        
         const totalAccExp = harvestTransactions.filter(t => t.harvestId === acc.id).reduce((a,b) => a+b.amount, 0), runningBalance = acc.amount - totalAccExp;
-
         return `<div class="note-card" style="border-left: 4px solid var(--success);">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <div><strong style="color:var(--primary); font-size:16px;">${acc.desc}</strong><br><small>Created: ${acc.date} | Initial: ${formatAmount(acc.amount)}</small></div>
@@ -893,68 +931,28 @@ function renderNotes() {
                     </div>
                 </div>`;
     if (businessNotes.length === 0) { container.innerHTML = html + `<p style="text-align:center; color:#888;">No notes recorded yet.</p>`; return; }
-    
     html += businessNotes.slice().sort((a,b)=>b.id-a.id).map(n => `<div class="note-card"><div><small>${n.date}</small></div><div style="margin-top:5px; white-space: pre-wrap;">${n.text}</div><div style="margin-top:10px;"><button class="action-edit" onclick="openAddModal('note', ${n.id})">Edit</button><button class="action-delete" onclick="deleteItem('note', ${businessNotes.indexOf(n)})">Delete</button></div></div>`).join('');
     container.innerHTML = html;
 }
 
-// --- CALCULATOR LOGIC & DRAG ---
+// --- CALCULATOR & DRAG ---
 let calcExpression = '';
-function toggleCalc() {
-    const calc = document.getElementById('calcContainer');
-    calc.style.display = (calc.style.display === 'flex') ? 'none' : 'flex';
-}
-function minimizeCalc() {
-    document.getElementById('calcContainer').classList.toggle('minimized');
-}
+function toggleCalc() { const calc = document.getElementById('calcContainer'); calc.style.display = (calc.style.display === 'flex') ? 'none' : 'flex'; }
+function minimizeCalc() { document.getElementById('calcContainer').classList.toggle('minimized'); }
 function calcNum(n) { calcExpression += n; updateCalcDisp(); }
 function calcOp(op) { calcExpression += op; updateCalcDisp(); }
 function calcClear() { calcExpression = ''; updateCalcDisp(); }
 function calcDel() { calcExpression = calcExpression.slice(0, -1); updateCalcDisp(); }
 function updateCalcDisp() { document.getElementById('calcDisp').innerText = calcExpression || '0'; }
-function calcRes() {
-    try {
-        const result = eval(calcExpression);
-        calcExpression = result.toString();
-        updateCalcDisp();
-    } catch {
-        document.getElementById('calcDisp').innerText = 'Error';
-        calcExpression = '';
-    }
-}
+function calcRes() { try { const result = eval(calcExpression); calcExpression = result.toString(); updateCalcDisp(); } catch { document.getElementById('calcDisp').innerText = 'Error'; calcExpression = ''; } }
 
 dragElement(document.getElementById("calcContainer"));
 function dragElement(elmnt) {
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    if (document.getElementById("calcHeader")) {
-        document.getElementById("calcHeader").onmousedown = dragMouseDown;
-    } else {
-        elmnt.onmousedown = dragMouseDown;
-    }
-    function dragMouseDown(e) {
-        e = e || window.event;
-        e.preventDefault();
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        document.onmouseup = closeDragElement;
-        document.onmousemove = elementDrag;
-    }
-    function elementDrag(e) {
-        e = e || window.event;
-        e.preventDefault();
-        pos1 = pos3 - e.clientX;
-        pos2 = pos4 - e.clientY;
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
-        elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-        elmnt.style.bottom = "auto"; 
-        elmnt.style.right = "auto";
-    }
-    function closeDragElement() {
-        document.onmouseup = null;
-        document.onmousemove = null;
-    }
+    if (document.getElementById("calcHeader")) { document.getElementById("calcHeader").onmousedown = dragMouseDown; }
+    function dragMouseDown(e) { e = e || window.event; e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY; document.onmouseup = closeDragElement; document.onmousemove = elementDrag; }
+    function elementDrag(e) { e = e || window.event; e.preventDefault(); pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY; pos3 = e.clientX; pos4 = e.clientY; elmnt.style.top = (elmnt.offsetTop - pos2) + "px"; elmnt.style.left = (elmnt.offsetLeft - pos1) + "px"; elmnt.style.bottom = "auto"; elmnt.style.right = "auto"; }
+    function closeDragElement() { document.onmouseup = null; document.onmousemove = null; }
 }
 
 load();
