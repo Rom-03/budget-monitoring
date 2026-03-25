@@ -235,6 +235,24 @@
         #calcContainer.minimized { height: 35px; width: 150px; }
         #calcContainer.minimized .calc-display, #calcContainer.minimized .calc-grid { display: none; }
 
+        /* Added for Category Breakdown */
+        .category-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .cat-chip {
+            background: var(--input-bg);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+        .cat-chip label { font-size: 9px; font-weight: 700; color: #888; text-transform: uppercase; }
+        .cat-chip span { font-size: 13px; font-weight: 700; color: var(--text); }
+
         @media (max-width: 768px) {
             .chart-grid { grid-template-columns: 1fr; }
             .grid-stats { grid-template-columns: 1fr 1fr; }
@@ -387,6 +405,8 @@
                 <span class="banner-label">Filtered Budgeted Total</span>
                 <span class="banner-value" id="tabTotalBudgetedDisplay">₱0.00</span>
             </div>
+            <div class="category-breakdown" id="budgetCategoryBreakdown">
+                </div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3>Budgeted</h3><button class="add-btn" onclick="openAddModal('budget')">+ Add Expense</button></div>
             <div class="table-container"><table><thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Action</th></tr></thead><tbody id="expenseTable"></tbody></table></div>
         </div>
@@ -711,6 +731,15 @@ function render(){
     document.getElementById("tabTotalIncomeDisplay").innerText = formatAmount(inc);
     document.getElementById("tabTotalBudgetedDisplay").innerText = formatAmount(bud);
     document.getElementById("tabTotalUnbudgetedDisplay").innerText = formatAmount(unb);
+
+    // Render Category Breakdown for Budget Tab
+    const cats = ["FOOD", "OFFICE", "INTERNET", "WATER", "ELECTRICITY", "ALLOWANCE", "GROCERY", "MISCELLANEOUS"];
+    let catHtml = "";
+    cats.forEach(c => {
+        let total = fExp.filter(e => e.cat === c).reduce((a,b) => a + b.amount, 0);
+        catHtml += `<div class="cat-chip"><label>${c}</label><span>${formatAmount(total)}</span></div>`;
+    });
+    document.getElementById("budgetCategoryBreakdown").innerHTML = catHtml;
 
     let totalRevenue = harvests.reduce((a, b) => a + b.amount, 0), totalExpenses = harvestTransactions.reduce((a, b) => a + b.amount, 0);
     let netProfit = totalRevenue - totalExpenses, margin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : 0;
