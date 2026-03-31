@@ -20,43 +20,32 @@
 
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; color: var(--text); overflow-x: hidden; transition: 0.3s; }
 
+        /* Main App Loader */
+        #mainAppLoader {
+            position: fixed; inset: 0; background: var(--bg);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 5000; transition: opacity 0.4s ease;
+        }
+        .app-spinner {
+            width: 40px; height: 40px; border: 4px solid rgba(44, 123, 229, 0.1);
+            border-top-color: var(--primary); border-radius: 50%;
+            animation: spin 0.8s linear infinite; margin-bottom: 15px;
+        }
+        .loader-text { font-size: 13px; font-weight: 600; color: var(--primary); letter-spacing: 1px; }
+
         .tab-total-banner {
-            background: var(--card-bg);
-            padding: 15px 20px;
-            border-radius: 12px;
-            border-left: 5px solid var(--primary);
-            margin-bottom: 20px;
-            box-shadow: var(--shadow);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            background: var(--card-bg); padding: 15px 20px; border-radius: 12px;
+            border-left: 5px solid var(--primary); margin-bottom: 20px;
+            box-shadow: var(--shadow); display: flex; justify-content: space-between; align-items: center;
         }
-        .tab-total-banner .banner-label {
-            font-size: 11px;
-            font-weight: 700;
-            color: #888;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .tab-total-banner .banner-value {
-            font-size: 20px;
-            font-weight: 800;
-            color: var(--text);
-        }
+        .tab-total-banner .banner-label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+        .tab-total-banner .banner-value { font-size: 20px; font-weight: 800; color: var(--text); }
 
         .theme-switch-wrapper { display: flex; align-items: center; gap: 8px; }
-        .theme-switch {
-            position: relative; display: inline-block; width: 34px; height: 18px;
-        }
+        .theme-switch { position: relative; display: inline-block; width: 34px; height: 18px; }
         .theme-switch input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute; cursor: pointer; inset: 0; background-color: rgba(255,255,255,0.3);
-            transition: .4s; border-radius: 34px;
-        }
-        .slider:before {
-            position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px;
-            background-color: white; transition: .4s; border-radius: 50%;
-        }
+        .slider { position: absolute; cursor: pointer; inset: 0; background-color: rgba(255,255,255,0.3); transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--success); }
         input:checked + .slider:before { transform: translateX(16px); }
 
@@ -68,25 +57,19 @@
         }
 
         .login-card {
-            background: var(--card-bg);
-            padding: 30px 25px;
-            border-radius: 16px;
-            width: 310px;
-            text-align: center;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: var(--card-bg); padding: 30px 25px; border-radius: 16px; width: 310px;
+            text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
             animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .login-brand { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: var(--primary); font-weight: 800; margin-bottom: 5px; display: block; }
         .login-card h3 { margin: 0 0 8px; font-size: 20px; color: var(--text); font-weight: 700; }
         .login-card p { color: #888; font-size: 12px; margin: 0 0 25px; line-height: 1.4; }
-        .pass-input-wrapper { margin-bottom: 20px; }
-
+        
         #passInput {
             text-align: center; font-size: 22px; letter-spacing: 8px; padding: 12px;
             border: 1.5px solid var(--border); border-radius: 10px; transition: all 0.2s ease;
-            background: var(--input-bg); width: 100%; box-sizing: border-box;
+            background: var(--input-bg); width: 100%; box-sizing: border-box; margin-bottom: 20px;
         }
 
         #passInput:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(44, 123, 229, 0.15); outline: none; }
@@ -99,10 +82,7 @@
         .btn-unlock:hover { background: #1a5bb4; transform: translateY(-1px); }
         .btn-unlock:disabled { background: #4b6584; cursor: not-allowed; transform: none; }
 
-        .spinner {
-            width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%;
-            border-top-color: #fff; animation: spin 0.8s linear infinite; display: none;
-        }
+        .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 0.8s linear infinite; display: none; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
@@ -188,10 +168,27 @@
         .controls-bar { background: var(--card-bg); padding: 12px; border-radius: 10px; display: flex; gap: 10px; align-items: center; margin-bottom: 20px; box-shadow: var(--shadow); flex-wrap: wrap; }
         
         .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
-        .card { padding: 12px; border-radius: 10px; font-size: 10px; color: white; text-align: center; }
+        .card { padding: 12px; border-radius: 10px; font-size: 10px; color: white; text-align: center; border: 2px solid transparent; }
         .card span { font-size: 16px; font-weight: 700; display: block; margin-top: 5px; }
         .income { background: var(--success); } .expense { background: var(--danger); } .unbudget { background: var(--warning); }
         .liability { background: #6c5ce7; } .savings { background: #00cec9; } .biz-profit { background: #4b6584; }
+        
+        /* Glowing Total Spent Card */
+        .total-spent { 
+            background: #34495e; 
+            animation: borderGlow 2.5s infinite alternate;
+        }
+
+        @keyframes borderGlow {
+            from {
+                border-color: rgba(255, 255, 255, 0.1);
+                box-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
+            }
+            to {
+                border-color: rgba(255, 255, 255, 0.6);
+                box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+            }
+        }
 
         .card-trans { 
             background: var(--card-bg) !important; color: var(--text) !important; border: 1px solid var(--border);
@@ -220,36 +217,20 @@
         #calcContainer {
             position: fixed; bottom: 20px; right: 20px; width: 220px; background: var(--card-bg);
             border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow);
-            z-index: 4000; display: none; flex-direction: column; overflow: hidden;
-            user-select: none;
+            z-index: 4000; display: none; flex-direction: column; overflow: hidden; user-select: none;
         }
         .calc-header { background: var(--primary); color: white; padding: 8px 12px; font-size: 12px; font-weight: bold; display: flex; justify-content: space-between; cursor: grab; }
-        .calc-header:active { cursor: grabbing; }
         .calc-display { padding: 15px; text-align: right; font-size: 20px; background: var(--input-bg); border-bottom: 1px solid var(--border); min-height: 30px; word-break: break-all; }
         .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); }
         .calc-grid button { border: none; background: var(--card-bg); padding: 12px; font-size: 14px; cursor: pointer; transition: 0.1s; color: var(--text); }
         .calc-grid button:hover { background: var(--input-bg); }
         .calc-grid .op { background: var(--input-bg); color: var(--primary); font-weight: bold; }
         .calc-grid .eq { background: var(--primary); color: white; }
-        
         #calcContainer.minimized { height: 35px; width: 150px; }
         #calcContainer.minimized .calc-display, #calcContainer.minimized .calc-grid { display: none; }
 
-        /* Added for Category Breakdown */
-        .category-breakdown {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .cat-chip {
-            background: var(--input-bg);
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-        }
+        .category-breakdown { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .cat-chip { background: var(--input-bg); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; }
         .cat-chip label { font-size: 9px; font-weight: 700; color: #888; text-transform: uppercase; }
         .cat-chip span { font-size: 13px; font-weight: 700; color: var(--text); }
 
@@ -258,7 +239,6 @@
             .grid-stats { grid-template-columns: 1fr 1fr; }
             header { padding: 0 10px; }
         }
-
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
@@ -267,14 +247,17 @@
 <div id="toast">Success!</div>
 <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
 
+<div id="mainAppLoader" style="display: none;">
+    <div class="app-spinner"></div>
+    <div class="loader-text">SYNCING DASHBOARD...</div>
+</div>
+
 <div id="loginOverlay">
     <div class="login-card">
         <span class="login-brand">Private Portal</span>
         <h3>Budget Monitoring</h3>
         <p>Please enter your security pin to access the financial dashboard.</p>
-        <div class="pass-input-wrapper">
-            <input type="password" id="passInput" maxlength="4" placeholder="••••" autocomplete="off">
-        </div>
+        <input type="password" id="passInput" maxlength="4" placeholder="••••" autocomplete="off">
         <button id="loginBtn" onclick="checkLogin()" class="btn-unlock">
             <span class="spinner" id="loginSpinner"></span>
             <span id="loginText">Unlock Dashboard</span>
@@ -337,12 +320,12 @@
         <div class="controls-bar">
             <select id="month" style="width:130px;"></select>
             <select id="year" style="width:90px;"></select>
-            <div style="flex-grow: 1;"></div> 
         </div>
 
         <div id="overview" class="section">
             <div class="grid-stats">
                 <div class="card income">Income<br><span id="totalIncome">₱0.00</span></div>
+                <div class="card total-spent">Total Spending<br><span id="totalSpentOverall">₱0.00</span></div>
                 <div class="card biz-profit">Net Business Profit (All-Time)<br><span id="totalBizProfit">₱0.00</span></div>
                 <div class="card expense">Budgeted<br><span id="totalBudgeted">₱0.00</span></div>
                 <div class="card unbudget">Unbudgeted<br><span id="totalUnbudgeted">₱0.00</span></div>
@@ -375,10 +358,7 @@
                 <div style="display:flex; align-items:center; gap:15px;">
                     <div class="theme-switch-wrapper" style="background: var(--input-bg); padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border);">
                         <span style="font-size:10px; font-weight:bold; color:var(--text);">SHOW ALL HISTORY</span>
-                        <label class="theme-switch">
-                            <input type="checkbox" id="harvestShowAllToggle" onchange="toggleHarvestShowAll()">
-                            <span class="slider"></span>
-                        </label>
+                        <label class="theme-switch"><input type="checkbox" id="harvestShowAllToggle" onchange="toggleHarvestShowAll()"><span class="slider"></span></label>
                     </div>
                     <button class="add-btn" style="background:var(--success)" onclick="openAddModal('harvest')">+ New Account</button>
                     <button class="add-btn" style="background:var(--danger)" onclick="openAddModal('harvest_expense')">+ Add Expense</button>
@@ -393,32 +373,23 @@
         </div>
 
         <div id="income" class="section">
-            <div class="tab-total-banner">
-                <span class="banner-label">Filtered Income Total</span>
-                <span class="banner-value" id="tabTotalIncomeDisplay">₱0.00</span>
-            </div>
+            <div class="tab-total-banner"><span class="banner-label">Filtered Income Total</span><span class="banner-value" id="tabTotalIncomeDisplay">₱0.00</span></div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3>Income</h3><button class="add-btn" onclick="openAddModal('income')">+ Add Income</button></div>
             <div class="table-container"><table><thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Action</th></tr></thead><tbody id="incomeTable"></tbody></table></div>
         </div>
         <div id="budget" class="section">
-            <div class="tab-total-banner" style="border-left-color: var(--danger);">
-                <span class="banner-label">Filtered Budgeted Total</span>
-                <span class="banner-value" id="tabTotalBudgetedDisplay">₱0.00</span>
-            </div>
-            <div class="category-breakdown" id="budgetCategoryBreakdown">
-                </div>
+            <div class="tab-total-banner" style="border-left-color: var(--danger);"><span class="banner-label">Filtered Budgeted Total</span><span class="banner-value" id="tabTotalBudgetedDisplay">₱0.00</span></div>
+            <div class="category-breakdown" id="budgetCategoryBreakdown"></div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3>Budgeted</h3><button class="add-btn" onclick="openAddModal('budget')">+ Add Expense</button></div>
             <div class="table-container"><table><thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Action</th></tr></thead><tbody id="expenseTable"></tbody></table></div>
         </div>
         <div id="unbudget" class="section">
-            <div class="tab-total-banner" style="border-left-color: var(--warning);">
-                <span class="banner-label">Filtered Unbudgeted Total</span>
-                <span class="banner-value" id="tabTotalUnbudgetedDisplay">₱0.00</span>
-            </div>
+            <div class="tab-total-banner" style="border-left-color: var(--warning);"><span class="banner-label">Filtered Unbudgeted Total</span><span class="banner-value" id="tabTotalUnbudgetedDisplay">₱0.00</span></div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3>Unbudgeted</h3><button class="add-btn" onclick="openAddModal('unbudget')">+ Add Entry</button></div>
             <div class="table-container"><table><thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Action</th></tr></thead><tbody id="unTable"></tbody></table></div>
         </div>
         <div id="liability" class="section">
+            <div class="tab-total-banner" style="border-left-color: #6c5ce7;"><span class="banner-label">Filtered Liability Total</span><span class="banner-value" id="tabTotalLiabilityDisplay">₱0.00</span></div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3>Liability</h3><button class="add-btn" onclick="openAddModal('liability')">+ Add Debt</button></div>
             <div class="table-container"><table><thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Action</th></tr></thead><tbody id="liaTable"></tbody></table></div>
         </div>
@@ -456,86 +427,48 @@
     <div class="modal-content">
         <h3 id="modalTitle">Entry</h3>
         <div id="standardFields">
-            <div class="form-group"><label class="form-label">Transaction Date</label><input type="date" id="modalDate"></div>
+            <div class="form-group"><label class="form-label">Date</label><input type="date" id="modalDate"></div>
             <div class="form-group" id="modalContributorBox" style="display:none;"><label class="form-label">Partner</label><select id="modalContributor"><option value="Jerome">Jerome</option><option value="Jennifer">Jennifer</option></select></div>
             <div class="form-group" id="modalCatBox" style="display:none;"><label class="form-label">Category</label><select id="modalCat"><option>FOOD</option><option>OFFICE</option><option>INTERNET</option><option>WATER</option><option>ELECTRICITY</option><option>ALLOWANCE</option><option>GROCERY</option><option>MISCELLANEOUS</option></select></div>
             <div class="form-group" id="modalAccountBox" style="display:none;"><label class="form-label">Harvest Account</label><select id="modalAccountSelect"></select></div>
-            <div class="form-group" id="modalDescBox"><label class="form-label">Description / Label</label><input type="text" id="modalDesc" placeholder="What is this for?"></div>
+            <div class="form-group" id="modalDescBox"><label class="form-label">Description</label><input type="text" id="modalDesc" placeholder="What is this for?"></div>
             <div class="form-group"><label class="form-label">Amount (PHP)</label><input type="number" id="modalAmount" placeholder="0.00"></div>
         </div>
-        <div id="noteFields" style="display:none;"><div class="form-group"><label class="form-label">Note Content</label><textarea id="modalNoteBody" rows="8" placeholder="Type your business notes here..."></textarea></div></div>
-        <div class="btn-group"><button onclick="closeModal('addModal')" class="btn-cancel">Cancel</button><button onclick="processAdd()" class="btn-save">Confirm Entry</button></div>
+        <div id="noteFields" style="display:none;"><div class="form-group"><label class="form-label">Note Content</label><textarea id="modalNoteBody" rows="8"></textarea></div></div>
+        <div class="btn-group"><button onclick="closeModal('addModal')" class="btn-cancel">Cancel</button><button onclick="processAdd()" class="btn-save">Confirm</button></div>
     </div>
 </div>
 
 <div id="pinModal" class="modal-overlay">
     <div class="modal-content">
         <h3>Change Security PIN</h3>
-        <div class="form-group">
-            <label class="form-label">Current PIN</label>
-            <input type="password" id="curPin" maxlength="4" placeholder="••••">
-        </div>
-        <div class="form-group">
-            <label class="form-label">New 4-Digit PIN</label>
-            <input type="password" id="newPin" maxlength="4" placeholder="••••">
-        </div>
-        <div class="btn-group">
-            <button onclick="closeModal('pinModal')" class="btn-cancel">Cancel</button>
-            <button onclick="executeChangePin()" class="btn-save">Update PIN</button>
-        </div>
+        <div class="form-group"><label class="form-label">Current PIN</label><input type="password" id="curPin" maxlength="4"></div>
+        <div class="form-group"><label class="form-label">New 4-Digit PIN</label><input type="password" id="newPin" maxlength="4"></div>
+        <div class="btn-group"><button onclick="closeModal('pinModal')" class="btn-cancel">Cancel</button><button onclick="executeChangePin()" class="btn-save">Update PIN</button></div>
     </div>
 </div>
 
 <div id="deleteConfirmModal" class="confirm-overlay">
-    <div class="modal-content" style="text-align:center;">
-        <h3 style="color:var(--danger);">Delete Entry?</h3>
-        <p style="font-size:14px; color:#888;">This action cannot be undone.</p>
-        <div class="btn-group"><button onclick="closeConfirm()" class="btn-cancel">Cancel</button><button id="confirmBtn" class="btn-save" style="background:var(--danger);">Delete</button></div>
-    </div>
+    <div class="modal-content" style="text-align:center;"><h3 style="color:var(--danger);">Delete Entry?</h3><p style="font-size:14px; color:#888;">This action cannot be undone.</p><div class="btn-group"><button onclick="closeConfirm()" class="btn-cancel">Cancel</button><button id="confirmBtn" class="btn-save" style="background:var(--danger);">Delete</button></div></div>
 </div>
 
 <div id="logoutConfirmModal" class="confirm-overlay">
-    <div class="modal-content" style="text-align:center;">
-        <h3 style="color:var(--danger);">Logout?</h3>
-        <p style="font-size:14px; color:#888;">Are you sure you want to exit the dashboard?</p>
-        <div class="btn-group"><button onclick="closeModal('logoutConfirmModal')" class="btn-cancel">Cancel</button><button onclick="logout()" class="btn-save" style="background:var(--danger);">Logout</button></div>
-    </div>
+    <div class="modal-content" style="text-align:center;"><h3 style="color:var(--danger);">Logout?</h3><p style="font-size:14px; color:#888;">Are you sure you want to exit?</p><div class="btn-group"><button onclick="closeModal('logoutConfirmModal')" class="btn-cancel">Cancel</button><button onclick="logout()" class="btn-save" style="background:var(--danger);">Logout</button></div></div>
 </div>
 
 <div id="resetModal" class="confirm-overlay">
-    <div class="modal-content" style="text-align:center;">
-        <h3 style="color:var(--danger);">Wipe System Data?</h3>
-        <p style="font-size:14px; color:#888;">All your financial history will be permanently erased.</p>
-        <div class="btn-group"><button onclick="closeModal('resetModal')" class="btn-cancel">Cancel</button><button onclick="executeFullReset()" class="btn-save" style="background:var(--danger);">Wipe All</button></div>
-    </div>
+    <div class="modal-content" style="text-align:center;"><h3 style="color:var(--danger);">Wipe System Data?</h3><p style="font-size:14px; color:#888;">All history will be erased.</p><div class="btn-group"><button onclick="closeModal('resetModal')" class="btn-cancel">Cancel</button><button onclick="executeFullReset()" class="btn-save" style="background:var(--danger);">Wipe All</button></div></div>
 </div>
 
 <div id="calcContainer">
-    <div class="calc-header" id="calcHeader">
-        <span onclick="minimizeCalc()" style="cursor:pointer; font-size: 16px;">−</span>
-        <span>Business Calc</span>
-        <span onclick="toggleCalc()" style="cursor:pointer; font-size: 16px;">×</span>
-    </div>
+    <div class="calc-header" id="calcHeader"><span onclick="minimizeCalc()" style="cursor:pointer; font-size: 16px;">−</span><span>Business Calc</span><span onclick="toggleCalc()" style="cursor:pointer; font-size: 16px;">×</span></div>
     <div class="calc-display" id="calcDisp">0</div>
     <div class="calc-grid">
-        <button onclick="calcClear()">C</button>
-        <button onclick="calcOp('/')" class="op">÷</button>
-        <button onclick="calcOp('*')" class="op">×</button>
-        <button onclick="calcDel()">⌫</button>
-        <button onclick="calcNum('7')">7</button>
-        <button onclick="calcNum('8')">8</button>
-        <button onclick="calcNum('9')">9</button>
-        <button onclick="calcOp('-')" class="op">-</button>
-        <button onclick="calcNum('4')">4</button>
-        <button onclick="calcNum('5')">5</button>
-        <button onclick="calcNum('6')">6</button>
-        <button onclick="calcOp('+')" class="op">+</button>
-        <button onclick="calcNum('1')">1</button>
-        <button onclick="calcNum('2')">2</button>
-        <button onclick="calcNum('3')">3</button>
-        <button onclick="calcRes()" class="eq" style="grid-row: span 2;">=</button>
-        <button onclick="calcNum('0')" style="grid-column: span 2;">0</button>
-        <button onclick="calcNum('.')">.</button>
+        <button onclick="calcClear()">C</button><button onclick="calcOp('/')" class="op">÷</button><button onclick="calcOp('*')" class="op">×</button><button onclick="calcDel()">⌫</button>
+        <button onclick="calcNum('7')">7</button><button onclick="calcNum('8')">8</button><button onclick="calcNum('9')">9</button><button onclick="calcOp('-')" class="op">-</button>
+        <button onclick="calcNum('4')">4</button><button onclick="calcNum('5')">5</button><button onclick="calcNum('6')">6</button><button onclick="calcOp('+')" class="op">+</button>
+        <button onclick="calcNum('1')">1</button><button onclick="calcNum('2')">2</button><button onclick="calcNum('3')">3</button><button onclick="calcRes()" class="eq" style="grid-row: span 2;">=</button>
+        <button onclick="calcNum('0')" style="grid-column: span 2;">0</button><button onclick="calcNum('.')">.</button>
     </div>
 </div>
 
@@ -564,16 +497,10 @@ async function checkLogin() {
     try {
         const res = await fetch(SCRIPT_URL);
         const data = await res.json();
-        if(data.pinHash) {
-            cloudHash = data.pinHash;
-            localStorage.setItem("dashPinHash", cloudHash);
-        }
-    } catch(e) {
-        cloudHash = localStorage.getItem("dashPinHash") || DEFAULT_PIN_HASH;
-    }
+        if(data.pinHash) { cloudHash = data.pinHash; localStorage.setItem("dashPinHash", cloudHash); }
+    } catch(e) { cloudHash = localStorage.getItem("dashPinHash") || DEFAULT_PIN_HASH; }
 
     const inputHash = await hashPin(inputPin);
-
     setTimeout(() => {
         if(inputHash === cloudHash) { 
             sessionStorage.setItem("isLoggedIn", "true"); 
@@ -581,9 +508,7 @@ async function checkLogin() {
             localStorage.setItem("activeTab", "overview"); 
             location.reload(); 
         } else { 
-            btn.disabled = false;
-            spinner.style.display = 'none';
-            text.innerText = 'Unlock Dashboard';
+            btn.disabled = false; spinner.style.display = 'none'; text.innerText = 'Unlock Dashboard';
             showToast("Invalid Key", true);
             const card = document.querySelector('.login-card');
             card.style.animation = 'none'; void card.offsetWidth; card.style.animation = 'shake 0.4s';
@@ -597,46 +522,17 @@ const fullMonths=["January","February","March","April","May","June","July","Augu
 let showAllHarvests = false; 
 
 document.getElementById('passInput').addEventListener('keypress', function(e) { if(e.key === 'Enter') checkLogin(); });
-document.getElementById('addModal').addEventListener('keypress', function(e) { if(e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') processAdd(); });
-
-async function executeChangePin() {
-    const cur = document.getElementById('curPin').value;
-    const nxt = document.getElementById('newPin').value;
-    let storedPinHash = localStorage.getItem("dashPinHash") || DEFAULT_PIN_HASH;
-    const curHash = await hashPin(cur);
-    
-    if(curHash !== storedPinHash) { showToast("Current PIN incorrect", true); return; }
-    if(nxt.length !== 4) { showToast("PIN must be 4 digits", true); return; }
-    
-    const newHash = await hashPin(nxt);
-    pinHash = newHash;
-    localStorage.setItem("dashPinHash", newHash);
-    await save(); 
-    
-    showToast("PIN Updated successfully");
-    closeModal('pinModal');
-    document.getElementById('curPin').value = '';
-    document.getElementById('newPin').value = '';
-}
-
-function updateActivity() { sessionStorage.setItem("lastActivity", Date.now()); }
-document.addEventListener('click', updateActivity);
-document.addEventListener('keypress', updateActivity);
-
-function checkTimeout() {
-    const last = sessionStorage.getItem("lastActivity");
-    const ONE_HOUR = 3600000; 
-    if (sessionStorage.getItem("isLoggedIn") === "true" && last && (Date.now() - last > ONE_HOUR)) { logout(); }
-}
-setInterval(checkTimeout, 10000); 
 
 async function load() {
     const isLogged = sessionStorage.getItem("isLoggedIn") === "true";
     if(isLogged) { 
         document.getElementById("loginOverlay").style.display="none"; 
-        document.getElementById("mainApp").style.display="block"; 
-        updateActivity();
+        document.getElementById("mainApp").style.display="none"; 
+        document.getElementById("mainAppLoader").style.display="flex"; 
+    } else {
+        return; 
     }
+
     const currentTheme = localStorage.getItem("theme") || "light";
     applyTheme(currentTheme);
     document.getElementById('themeToggle').checked = (currentTheme === "dark");
@@ -649,15 +545,20 @@ async function load() {
             liabilities = data.liabilities; harvests = data.harvests; 
             harvestTransactions = data.harvestTransactions; contributions = data.contributions;
             businessNotes = data.businessNotes;
-            if(data.pinHash) {
-                pinHash = data.pinHash;
-                localStorage.setItem("dashPinHash", pinHash);
-            }
+            if(data.pinHash) { pinHash = data.pinHash; localStorage.setItem("dashPinHash", pinHash); }
         }
     } catch (e) { console.log("Cloud load failed."); }
     
     monthSel.value = "all";
     switchSection(localStorage.getItem("activeTab") || "overview");
+    
+    setTimeout(() => {
+        document.getElementById("mainAppLoader").style.opacity = "0";
+        setTimeout(() => {
+            document.getElementById("mainAppLoader").style.display = "none";
+            document.getElementById("mainApp").style.display = "block";
+        }, 400);
+    }, 500);
 }
 
 async function save() {
@@ -707,100 +608,46 @@ for(let y=2024; y<=2035; y++) yearSel.innerHTML+=`<option>${y}</option>`;
 yearSel.value=new Date().getFullYear();
 monthSel.onchange=render; yearSel.onchange=render;
 
-function filterData(data){
-    return data.filter(d=>{
-        let dt=new Date(d.date), mMatch = monthSel.value === "all" || dt.getMonth() == monthSel.value, yMatch = dt.getFullYear() == yearSel.value;
-        return mMatch && yMatch;
-    });
-}
+function filterData(data){ return data.filter(d=>{ let dt=new Date(d.date), mMatch = monthSel.value === "all" || dt.getMonth() == monthSel.value, yMatch = dt.getFullYear() == yearSel.value; return mMatch && yMatch; }); }
 
 function render(){
     const fInc=filterData(incomes).sort((a,b) => new Date(b.date) - new Date(a.date));
     const fExp=filterData(expenses).sort((a,b) => new Date(b.date) - new Date(a.date));
     const fUn=filterData(unbudgeted).sort((a,b) => new Date(b.date) - new Date(a.date));
     const fLia=filterData(liabilities).sort((a,b) => new Date(b.date) - new Date(a.date));
-
     const inc = fInc.reduce((a,b)=>a+b.amount,0), bud = fExp.reduce((a,b)=>a+b.amount,0), unb = fUn.reduce((a,b)=>a+b.amount,0), lia = fLia.reduce((a,b)=>a+b.amount,0), rem = inc-(bud+unb+lia);
     
-    document.getElementById("totalIncome").innerText=formatAmount(inc); 
-    document.getElementById("totalBudgeted").innerText=formatAmount(bud);
-    document.getElementById("totalUnbudgeted").innerText=formatAmount(unb); 
-    document.getElementById("totalLiability").innerText=formatAmount(lia); 
-    document.getElementById("totalSavings").innerText=formatAmount(rem);
+    // Calculate and display new card
+    const totalSpentOverall = bud + unb;
+    document.getElementById("totalSpentOverall").innerText = formatAmount(totalSpentOverall);
 
-    document.getElementById("tabTotalIncomeDisplay").innerText = formatAmount(inc);
-    document.getElementById("tabTotalBudgetedDisplay").innerText = formatAmount(bud);
-    document.getElementById("tabTotalUnbudgetedDisplay").innerText = formatAmount(unb);
-
-    // Render Category Breakdown for Budget Tab
-    const cats = ["FOOD", "OFFICE", "INTERNET", "WATER", "ELECTRICITY", "ALLOWANCE", "GROCERY", "MISCELLANEOUS"];
-    let catHtml = "";
-    cats.forEach(c => {
-        let total = fExp.filter(e => e.cat === c).reduce((a,b) => a + b.amount, 0);
-        catHtml += `<div class="cat-chip"><label>${c}</label><span>${formatAmount(total)}</span></div>`;
-    });
-    document.getElementById("budgetCategoryBreakdown").innerHTML = catHtml;
-
-    let totalRevenue = harvests.reduce((a, b) => a + b.amount, 0), totalExpenses = harvestTransactions.reduce((a, b) => a + b.amount, 0);
-    let netProfit = totalRevenue - totalExpenses, margin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : 0;
+    document.getElementById("totalIncome").innerText=formatAmount(inc); document.getElementById("totalBudgeted").innerText=formatAmount(bud); document.getElementById("totalUnbudgeted").innerText=formatAmount(unb); document.getElementById("totalLiability").innerText=formatAmount(lia); document.getElementById("totalSavings").innerText=formatAmount(rem);
+    document.getElementById("tabTotalIncomeDisplay").innerText = formatAmount(inc); document.getElementById("tabTotalBudgetedDisplay").innerText = formatAmount(bud); document.getElementById("tabTotalUnbudgetedDisplay").innerText = formatAmount(unb); document.getElementById("tabTotalLiabilityDisplay").innerText = formatAmount(lia);
     
-    document.getElementById("totalBizProfit").innerText = formatAmount(netProfit);
-    document.getElementById("hubBizRev").innerText = formatAmount(totalRevenue);
-    document.getElementById("hubBizNet").innerText = formatAmount(netProfit);
-    document.getElementById("hubMargin").innerText = margin + "%";
-    document.getElementById("hubLifetimeBal").innerText = formatAmount(netProfit);
-    document.getElementById("harvTotalRev").innerText = formatAmount(totalRevenue);
-    document.getElementById("harvTotalExp").innerText = formatAmount(totalExpenses);
-    document.getElementById("harvTotalNet").innerText = formatAmount(netProfit);
-
-    const fHarvests = harvests.filter(h => {
-        if(showAllHarvests) return true;
-        const curMonth = monthSel.value, curYear = yearSel.value;
-        const accountMatches = (new Date(h.date).getMonth() == curMonth || curMonth === "all") && new Date(h.date).getFullYear() == curYear;
-        const hasTransactionInPeriod = harvestTransactions.some(t => {
-            let td = new Date(t.date);
-            return t.harvestId === h.id && (td.getMonth() == curMonth || curMonth === "all") && td.getFullYear() == curYear;
-        });
-        return accountMatches || hasTransactionInPeriod;
-    });
-
+    const cats = ["FOOD", "OFFICE", "INTERNET", "WATER", "ELECTRICITY", "ALLOWANCE", "GROCERY", "MISCELLANEOUS"];
+    let catHtml = ""; cats.forEach(c => { let total = fExp.filter(e => e.cat === c).reduce((a,b) => a + b.amount, 0); catHtml += `<div class="cat-chip"><label>${c}</label><span>${formatAmount(total)}</span></div>`; });
+    document.getElementById("budgetCategoryBreakdown").innerHTML = catHtml;
+    
+    let totalRevenue = harvests.reduce((a, b) => a + b.amount, 0), totalExpenses = harvestTransactions.reduce((a, b) => a + b.amount, 0), netProfit = totalRevenue - totalExpenses;
+    document.getElementById("totalBizProfit").innerText = formatAmount(netProfit); document.getElementById("hubBizRev").innerText = formatAmount(totalRevenue); document.getElementById("hubBizNet").innerText = formatAmount(netProfit); document.getElementById("hubLifetimeBal").innerText = formatAmount(netProfit); document.getElementById("harvTotalRev").innerText = formatAmount(totalRevenue); document.getElementById("harvTotalExp").innerText = formatAmount(totalExpenses); document.getElementById("harvTotalNet").innerText = formatAmount(netProfit);
     document.getElementById("topHarvestsList").innerHTML = harvests.slice().sort((a,b)=>b.amount-a.amount).slice(0,3).map(h => `<div style="display:flex; justify-content:space-between;"><span>${h.desc}</span><b>${formatAmount(h.amount)}</b></div>`).join('') || "No active accounts.";
     
-    let jConTotal = contributions.filter(c => c.contributor === 'Jerome').reduce((a,b) => a + b.amount, 0);
-    let nConTotal = contributions.filter(c => c.contributor === 'Jennifer').reduce((a,b) => a + b.amount, 0);
-    let jShare = 0, nShare = 0, shareHtml = "", historyRows = [], jSpent = 0, nSpent = 0;
-
+    let jConTotal = contributions.filter(c => c.contributor === 'Jerome').reduce((a,b) => a + b.amount, 0), nConTotal = contributions.filter(c => c.contributor === 'Jennifer').reduce((a,b) => a + b.amount, 0);
+    let jSpent = 0, nSpent = 0, historyRows = [], jShare = 0, nShare = 0, shareHtml = "";
     harvestTransactions.forEach((t) => {
-        let isJ = t.desc.toLowerCase().includes('jerome'), isN = t.desc.toLowerCase().includes('jennifer');
-        const acc = harvests.find(h => h.id === t.harvestId);
-        if(isJ) {
-            let bal = jConTotal - jSpent, ded = Math.min(t.amount, bal), over = t.amount - ded;
-            jSpent += ded; if(ded > 0) historyRows.push({ date: t.date, who: 'Jerome', details: `${acc?.desc || 'Acc'}: ${t.desc}`, amt: ded });
-            if(over > 0) { jShare += over; shareHtml += `<tr><td>${t.date}</td><td>${acc?.desc || 'Acc'}</td><td>${t.desc}</td><td style="color:var(--danger)">${formatAmount(over)}</td></tr>`; }
-        }
-        if(isN) {
-            let bal = nConTotal - nSpent, ded = Math.min(t.amount, bal), over = t.amount - ded;
-            nSpent += ded; if(ded > 0) historyRows.push({ date: t.date, who: 'Jennifer', details: `${acc?.desc || 'Acc'}: ${t.desc}`, amt: ded });
-            if(over > 0) { nShare += over; shareHtml += `<tr><td>${t.date}</td><td>${acc?.desc || 'Acc'}</td><td>${t.desc}</td><td style="color:var(--danger)">${formatAmount(over)}</td></tr>`; }
-        }
+        let isJ = t.desc.toLowerCase().includes('jerome'), isN = t.desc.toLowerCase().includes('jennifer'), acc = harvests.find(h => h.id === t.harvestId);
+        if(isJ) { let bal = jConTotal - jSpent, ded = Math.min(t.amount, bal), over = t.amount - ded; jSpent += ded; if(ded > 0) historyRows.push({ date: t.date, who: 'Jerome', details: `${acc?.desc || 'Acc'}: ${t.desc}`, amt: ded }); if(over > 0) { jShare += over; shareHtml += `<tr><td>${t.date}</td><td>${acc?.desc || 'Acc'}</td><td>${t.desc}</td><td style="color:var(--danger)">${formatAmount(over)}</td></tr>`; } }
+        if(isN) { let bal = nConTotal - nSpent, ded = Math.min(t.amount, bal), over = t.amount - ded; nSpent += ded; if(ded > 0) historyRows.push({ date: t.date, who: 'Jennifer', details: `${acc?.desc || 'Acc'}: ${t.desc}`, amt: ded }); if(over > 0) { nShare += over; shareHtml += `<tr><td>${t.date}</td><td>${acc?.desc || 'Acc'}</td><td>${t.desc}</td><td style="color:var(--danger)">${formatAmount(over)}</td></tr>`; } }
     });
-
-    document.getElementById("sumJerome").innerText = formatAmount(jConTotal - jSpent);
-    document.getElementById("sumJennifer").innerText = formatAmount(nConTotal - nSpent);
-    document.getElementById("sumCombined").innerText = formatAmount((jConTotal - jSpent) + (nConTotal - nSpent)); 
-    document.getElementById("shareJerome").innerText = formatAmount(jShare);
-    document.getElementById("shareJennifer").innerText = formatAmount(nShare);
-    document.getElementById("shareTable").innerHTML = shareHtml || '<tr><td colspan="4" style="text-align:center">No overflow.</td></tr>';
+    
+    document.getElementById("sumJerome").innerText = formatAmount(jConTotal - jSpent); document.getElementById("sumJennifer").innerText = formatAmount(nConTotal - nSpent); document.getElementById("sumCombined").innerText = formatAmount((jConTotal - jSpent) + (nConTotal - nSpent)); document.getElementById("shareJerome").innerText = formatAmount(jShare); document.getElementById("shareJennifer").innerText = formatAmount(nShare); document.getElementById("shareTable").innerHTML = shareHtml || '<tr><td colspan="4" style="text-align:center">No overflow.</td></tr>';
     document.getElementById("conTable").innerHTML = contributions.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map((c) => `<tr><td>${c.date}</td><td>${c.contributor}</td><td>${c.desc}</td><td>${formatAmount(c.amount)}</td><td><button class="action-edit" onclick="openAddModal('contribution',${contributions.indexOf(c)})">Edit</button><button class="action-delete" onclick="deleteItem('con',${contributions.indexOf(c)})">Delete</button></td></tr>`).join('');
     document.getElementById("conHistoryTable").querySelector('tbody').innerHTML = historyRows.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(r => `<tr><td>${r.date}</td><td>${r.who}</td><td>${r.details}</td><td>-${formatAmount(r.amt)}</td></tr>`).join('');
-
-    const mapper = (type, label) => (d) => `<tr><td>${d.date}</td><td>${d.desc || d.cat}</td><td>${formatAmount(d.amount)}</td><td><button class="action-edit" onclick="openAddModal('${type}',${(type==='income'?incomes:type==='budget'?expenses:type==='unbudget'?unbudgeted:liabilities).indexOf(d)})">Edit</button><button class="action-delete" onclick="deleteItem('${label}',${(type==='income'?incomes:type==='budget'?expenses:type==='unbudget'?unbudgeted:liabilities).indexOf(d)})">Delete</button></td></tr>`;
-    document.getElementById("incomeTable").innerHTML=fInc.map(mapper('income', 'income')).join('');
-    document.getElementById("expenseTable").innerHTML=fExp.map(mapper('budget', 'exp')).join('');
-    document.getElementById("unTable").innerHTML=fUn.map(mapper('unbudget', 'un')).join('');
-    document.getElementById("liaTable").innerHTML=fLia.map(mapper('liability', 'lia')).join('');
     
-    updateCharts(bud, unb, lia, rem); renderHarvests(fHarvests); renderNotes(); updateSavingsTab();
+    const mapper = (type, label) => (d) => `<tr><td>${d.date}</td><td>${d.desc || d.cat}</td><td>${formatAmount(d.amount)}</td><td><button class="action-edit" onclick="openAddModal('${type}',${(type==='income'?incomes:type==='budget'?expenses:type==='unbudget'?unbudgeted:liabilities).indexOf(d)})">Edit</button><button class="action-delete" onclick="deleteItem('${label}',${(type==='income'?incomes:type==='budget'?expenses:type==='unbudget'?unbudgeted:liabilities).indexOf(d)})">Delete</button></td></tr>`;
+    document.getElementById("incomeTable").innerHTML=fInc.map(mapper('income', 'income')).join(''); document.getElementById("expenseTable").innerHTML=fExp.map(mapper('budget', 'exp')).join(''); document.getElementById("unTable").innerHTML=fUn.map(mapper('unbudget', 'un')).join(''); document.getElementById("liaTable").innerHTML=fLia.map(mapper('liability', 'lia')).join('');
+    
+    updateCharts(bud, unb, lia, rem); renderHarvests(harvests); renderNotes(); updateSavingsTab();
 }
 
 function openAddModal(type, existingId = null) {
@@ -811,43 +658,17 @@ function openAddModal(type, existingId = null) {
     document.getElementById('modalAccountBox').style.display = type==='harvest_expense'?'block':'none';
     document.getElementById('modalContributorBox').style.display = type==='contribution'?'block':'none';
     document.getElementById('modalDescBox').style.display = (type==='budget' || type==='note')?'none':'block';
-    
-    if(type === 'harvest_expense') {
-        const accSelect = document.getElementById('modalAccountSelect');
-        accSelect.innerHTML = harvests.map(h => `<option value="${h.id}">${h.desc}</option>`).join('');
-    }
-    
+    if(type === 'harvest_expense') { document.getElementById('modalAccountSelect').innerHTML = harvests.map(h => `<option value="${h.id}">${h.desc}</option>`).join(''); }
     if(type === 'note') {
-        document.getElementById('standardFields').style.display = 'none';
-        document.getElementById('noteFields').style.display = 'block';
-        if(existingId !== null) { 
-            const note = businessNotes.find(n => n.id === existingId); 
-            document.getElementById('modalNoteBody').value = note.text; 
-        } else { document.getElementById('modalNoteBody').value = ''; }
+        document.getElementById('standardFields').style.display = 'none'; document.getElementById('noteFields').style.display = 'block';
+        if(existingId !== null) { document.getElementById('modalNoteBody').value = businessNotes.find(n => n.id === existingId).text; } else { document.getElementById('modalNoteBody').value = ''; }
     } else {
-        document.getElementById('standardFields').style.display = 'block'; 
-        document.getElementById('noteFields').style.display = 'none';
+        document.getElementById('standardFields').style.display = 'block'; document.getElementById('noteFields').style.display = 'none';
         if(existingId !== null) {
-            let dataArr;
-            if(type==='income') dataArr = incomes;
-            else if(type==='budget') dataArr = expenses;
-            else if(type==='unbudget') dataArr = unbudgeted;
-            else if(type==='liability') dataArr = liabilities;
-            else if(type==='contribution') dataArr = contributions;
-            else if(type==='harvest') dataArr = harvests;
-            else if(type==='harvest_expense') dataArr = harvestTransactions;
-
-            const entry = dataArr[existingId];
-            document.getElementById('modalDate').value = entry.date;
-            document.getElementById('modalDesc').value = entry.desc || '';
-            document.getElementById('modalAmount').value = entry.amount;
-            if(type === 'budget') document.getElementById('modalCat').value = entry.cat;
-            if(type === 'contribution') document.getElementById('modalContributor').value = entry.contributor;
-            if(type === 'harvest_expense') document.getElementById('modalAccountSelect').value = entry.harvestId;
-        } else {
-            document.getElementById('modalDate').value = new Date().toISOString().split('T')[0];
-            document.getElementById('modalDesc').value = ''; document.getElementById('modalAmount').value = '';
-        }
+            let dataArr = type==='income'?incomes:type==='budget'?expenses:type==='unbudget'?unbudgeted:type==='liability'?liabilities:type==='contribution'?contributions:type==='harvest'?harvests:harvestTransactions;
+            const entry = dataArr[existingId]; document.getElementById('modalDate').value = entry.date; document.getElementById('modalDesc').value = entry.desc || ''; document.getElementById('modalAmount').value = entry.amount;
+            if(type === 'budget') document.getElementById('modalCat').value = entry.cat; if(type === 'contribution') document.getElementById('modalContributor').value = entry.contributor; if(type === 'harvest_expense') document.getElementById('modalAccountSelect').value = entry.harvestId;
+        } else { document.getElementById('modalDate').value = new Date().toISOString().split('T')[0]; document.getElementById('modalDesc').value = ''; document.getElementById('modalAmount').value = ''; }
     }
     document.getElementById('addModal').style.display = 'flex';
 }
@@ -855,35 +676,17 @@ function openAddModal(type, existingId = null) {
 function processAdd() {
     if(currentAddType === 'note') {
         const body = document.getElementById('modalNoteBody').value; if(!body.trim()) return;
-        if(editId !== null) { 
-            const idx = businessNotes.findIndex(n => n.id === editId); 
-            businessNotes[idx].text = body; 
-            businessNotes[idx].date = "Edited: " + new Date().toLocaleString(); 
-        } else { businessNotes.push({ id: Date.now(), date: new Date().toLocaleString(), text: body, pinned: false }); }
+        if(editId !== null) { let idx = businessNotes.findIndex(n => n.id === editId); businessNotes[idx].text = body; businessNotes[idx].date = "Edited: " + new Date().toLocaleString(); } else { businessNotes.push({ id: Date.now(), date: new Date().toLocaleString(), text: body, pinned: false }); }
     } else {
         const date = document.getElementById('modalDate').value, desc = document.getElementById('modalDesc').value, amt = Number(document.getElementById('modalAmount').value);
         if(!date || !amt) return;
-        let targetArr;
-        if(currentAddType === 'income') targetArr = incomes;
-        else if(currentAddType === 'budget') targetArr = expenses;
-        else if(currentAddType === 'unbudget') targetArr = unbudgeted;
-        else if(currentAddType === 'liability') targetArr = liabilities;
-        else if(currentAddType === 'contribution') targetArr = contributions;
-        else if(currentAddType === 'harvest') targetArr = harvests;
-        else if(currentAddType === 'harvest_expense') targetArr = harvestTransactions;
-
+        let targetArr = currentAddType==='income'?incomes:currentAddType==='budget'?expenses:currentAddType==='unbudget'?unbudgeted:currentAddType==='liability'?liabilities:currentAddType==='contribution'?contributions:currentAddType==='harvest'?harvests:harvestTransactions;
         if(editId !== null) {
-            const existing = targetArr[editId];
-            existing.date = date; existing.desc = desc; existing.amount = amt;
-            if(currentAddType === 'budget') existing.cat = document.getElementById('modalCat').value;
-            if(currentAddType === 'contribution') existing.contributor = document.getElementById('modalContributor').value;
-            if(currentAddType === 'harvest_expense') existing.harvestId = document.getElementById('modalAccountSelect').value;
+            let existing = targetArr[editId]; existing.date = date; existing.desc = desc; existing.amount = amt;
+            if(currentAddType === 'budget') existing.cat = document.getElementById('modalCat').value; if(currentAddType === 'contribution') existing.contributor = document.getElementById('modalContributor').value; if(currentAddType === 'harvest_expense') document.getElementById('modalAccountSelect').value = entry.harvestId;
         } else {
-            const newData = { date, desc, amount: amt };
-            if(currentAddType === 'budget') newData.cat = document.getElementById('modalCat').value;
-            if(currentAddType === 'contribution') newData.contributor = document.getElementById('modalContributor').value;
-            if(currentAddType === 'harvest_expense') newData.harvestId = document.getElementById('modalAccountSelect').value;
-            if(currentAddType === 'harvest') newData.id = Date.now().toString();
+            let newData = { date, desc, amount: amt };
+            if(currentAddType === 'budget') newData.cat = document.getElementById('modalCat').value; if(currentAddType === 'contribution') newData.contributor = document.getElementById('modalContributor').value; if(currentAddType === 'harvest_expense') newData.harvestId = document.getElementById('modalAccountSelect').value; if(currentAddType === 'harvest') newData.id = Date.now().toString();
             targetArr.push(newData);
         }
     }
@@ -907,11 +710,8 @@ function exportData() {
     const data = { incomes, expenses, unbudgeted, liabilities, harvests, harvestTransactions, contributions, businessNotes };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `Budget_Backup_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-    showToast("Exported JSON");
-    if(window.innerWidth<768) toggleSidebar();
+    const a = document.createElement('a'); a.href = url; a.download = `Backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); showToast("Exported JSON");
 }
 
 function importData(event) {
@@ -920,14 +720,7 @@ function importData(event) {
     reader.onload = function(e) {
         try {
             const data = JSON.parse(e.target.result);
-            if (data.incomes && data.harvests) {
-                incomes = data.incomes || []; expenses = data.expenses || [];
-                unbudgeted = data.unbudgeted || []; liabilities = data.liabilities || [];
-                harvests = data.harvests || []; harvestTransactions = data.harvestTransactions || [];
-                contributions = data.contributions || []; businessNotes = data.businessNotes || [];
-                showToast("Imported Successfully"); save();
-                if(window.innerWidth<768) toggleSidebar();
-            } else { showToast("Invalid data format", true); }
+            if (data.incomes) { incomes = data.incomes; expenses = data.expenses; unbudgeted = data.unbudgeted; liabilities = data.liabilities; harvests = data.harvests; harvestTransactions = data.harvestTransactions; contributions = data.contributions; businessNotes = data.businessNotes; showToast("Imported Successfully"); save(); }
         } catch (err) { showToast("Failed to parse file", true); }
     };
     reader.readAsText(file);
@@ -940,9 +733,7 @@ function updateSavingsTab() {
     let summary = {}; let grandTotal = 0;
     [...incomes, ...expenses, ...unbudgeted, ...liabilities].forEach(item => {
         let d = new Date(item.date), y = d.getFullYear(), m = d.getMonth(), amt = incomes.includes(item) ? item.amount : -item.amount;
-        grandTotal += amt;
-        if (mode === 'monthly' && y == curY) summary[m] = (summary[m]||0) + amt;
-        else if (mode === 'yearly') summary[y] = (summary[y]||0) + amt;
+        grandTotal += amt; if (mode === 'monthly' && y == curY) summary[m] = (summary[m]||0) + amt; else if (mode === 'yearly') summary[y] = (summary[y]||0) + amt;
     });
     let h = "";
     if (mode === 'monthly') fullMonths.forEach((m, i) => { if(summary[i] !== undefined) h += `<tr><td>${m} ${curY}</td><td>${formatAmount(summary[i])}</td></tr>`; });
@@ -967,47 +758,35 @@ function updateCharts(b, u, l, r) {
 function renderHarvests(filteredAccs) {
     const container = document.getElementById('harvestContainer');
     const accListToRender = showAllHarvests ? harvests : filteredAccs;
-    if (accListToRender.length === 0) { container.innerHTML = `<p style="text-align:center; color:#888;">No harvest accounts matching filter.</p>`; return; }
+    if (accListToRender.length === 0) { container.innerHTML = `<p style="text-align:center; color:#888;">No matching records.</p>`; return; }
     container.innerHTML = accListToRender.map((acc) => {
         let allTrans = harvestTransactions.filter(t => t.harvestId === acc.id);
         if(!showAllHarvests) {
-            const curMonth = monthSel.value, curYear = yearSel.value;
-            allTrans = allTrans.filter(t => {
-                let td = new Date(t.date);
-                return (td.getMonth() == curMonth || curMonth === "all") && td.getFullYear() == curYear;
-            });
+            const curM = monthSel.value, curY = yearSel.value;
+            allTrans = allTrans.filter(t => { let td = new Date(t.date); return (td.getMonth() == curM || curM === "all") && td.getFullYear() == curY; });
         }
         const list = allTrans.sort((a,b) => new Date(b.date) - new Date(a.date)).map(t => {
-            const globalIdx = harvestTransactions.indexOf(t);
-            return `<div style="font-size:12px; padding:4px 0; border-bottom:1px dashed #eee; display:flex; justify-content:space-between;"><span>${t.date} - ${t.desc}</span><span style="color:var(--danger)">-${formatAmount(t.amount)} <button class="action-delete" style="text-decoration:none;" onclick="deleteItem('har_trans', ${globalIdx})">×</button></span></div>`;
+            return `<div style="font-size:12px; padding:4px 0; border-bottom:1px dashed #eee; display:flex; justify-content:space-between;"><span>${t.date} - ${t.desc}</span><span style="color:var(--danger)">-${formatAmount(t.amount)} <button class="action-delete" style="text-decoration:none;" onclick="deleteItem('har_trans', ${harvestTransactions.indexOf(t)})">×</button></span></div>`;
         }).join('');
-        const totalAccExp = harvestTransactions.filter(t => t.harvestId === acc.id).reduce((a,b) => a+b.amount, 0), runningBalance = acc.amount - totalAccExp;
-        return `<div class="note-card" style="border-left: 4px solid var(--success);">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                        <div><strong style="color:var(--primary); font-size:16px;">${acc.desc}</strong><br><small>Created: ${acc.date} | Initial: ${formatAmount(acc.amount)}</small></div>
-                        <div style="text-align:right;"><div style="font-size:11px; color:#888;">Account Running Balance</div><strong style="color:${runningBalance < 0 ? 'var(--danger)' : 'var(--success)'}">${formatAmount(runningBalance)}</strong></div>
-                    </div>
-                    <div style="margin:10px 0; background:rgba(0,0,0,0.02); padding:10px; border-radius:8px;"><div style="font-size:10px; text-transform:uppercase; color:#888; margin-bottom:5px;">Transaction History ${showAllHarvests ? '(All-Time)' : ''}</div>${list || '<div style="color:#bbb; font-style:italic; font-size:11px;">No transactions found for this period.</div>'}</div>
-                    <div style="margin-top:10px; display:flex; gap:10px;"><button class="action-edit" onclick="openAddModal('harvest', ${harvests.indexOf(acc)})">Edit Account</button><button class="action-delete" onclick="deleteItem('har_acc', ${harvests.indexOf(acc)})">Delete</button></div>
-                </div>`;
+        const balance = acc.amount - harvestTransactions.filter(t => t.harvestId === acc.id).reduce((a,b) => a+b.amount, 0);
+        return `<div class="note-card" style="border-left: 4px solid var(--success);"><div style="display:flex; justify-content:space-between;"><div><strong style="color:var(--primary); font-size:16px;">${acc.desc}</strong><br><small>Initial: ${formatAmount(acc.amount)}</small></div><div style="text-align:right;"><small>Running Balance</small><br><strong style="color:${balance < 0 ? 'var(--danger)' : 'var(--success)'}">${formatAmount(balance)}</strong></div></div><div style="margin:10px 0; background:rgba(0,0,0,0.02); padding:10px; border-radius:8px;">${list || '<div style="color:#bbb; font-style:italic; font-size:11px;">No transactions.</div>'}</div><div style="margin-top:10px; display:flex; gap:10px;"><button class="action-edit" onclick="openAddModal('harvest', ${harvests.indexOf(acc)})">Edit</button><button class="action-delete" onclick="deleteItem('har_acc', ${harvests.indexOf(acc)})">Delete</button></div></div>`;
     }).join('');
 }
 
 function renderNotes() {
     const container = document.getElementById('notesContainer');
-    let html = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3>Business Records (All-Time)</h3>
-                    <div style="display:flex; gap:10px;">
-                        <button class="add-btn" style="background:var(--success)" onclick="toggleCalc()">Calculator</button>
-                        <button class="add-btn" onclick="openAddModal('note')">+ Add Note</button>
-                    </div>
-                </div>`;
-    if (businessNotes.length === 0) { container.innerHTML = html + `<p style="text-align:center; color:#888;">No notes recorded yet.</p>`; return; }
+    let html = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3>Notes</h3><div style="display:flex; gap:10px;"><button class="add-btn" style="background:var(--success)" onclick="toggleCalc()">Calculator</button><button class="add-btn" onclick="openAddModal('note')">+ Add Note</button></div></div>`;
+    if (businessNotes.length === 0) { container.innerHTML = html + `<p style="text-align:center; color:#888;">No notes.</p>`; return; }
     html += businessNotes.slice().sort((a,b)=>b.id-a.id).map(n => `<div class="note-card"><div><small>${n.date}</small></div><div style="margin-top:5px; white-space: pre-wrap;">${n.text}</div><div style="margin-top:10px;"><button class="action-edit" onclick="openAddModal('note', ${n.id})">Edit</button><button class="action-delete" onclick="deleteItem('note', ${businessNotes.indexOf(n)})">Delete</button></div></div>`).join('');
     container.innerHTML = html;
 }
 
-let calcExpression = '';
+function updateActivity() { sessionStorage.setItem("lastActivity", Date.now()); }
+document.addEventListener('click', updateActivity);
+document.addEventListener('keypress', updateActivity);
+function checkTimeout() { const last = sessionStorage.getItem("lastActivity"); if (sessionStorage.getItem("isLoggedIn") === "true" && last && (Date.now() - last > 3600000)) { logout(); } }
+setInterval(checkTimeout, 10000); 
+
 function toggleCalc() { const calc = document.getElementById('calcContainer'); calc.style.display = (calc.style.display === 'flex') ? 'none' : 'flex'; }
 function minimizeCalc() { document.getElementById('calcContainer').classList.toggle('minimized'); }
 function calcNum(n) { calcExpression += n; updateCalcDisp(); }
@@ -1015,14 +794,14 @@ function calcOp(op) { calcExpression += op; updateCalcDisp(); }
 function calcClear() { calcExpression = ''; updateCalcDisp(); }
 function calcDel() { calcExpression = calcExpression.slice(0, -1); updateCalcDisp(); }
 function updateCalcDisp() { document.getElementById('calcDisp').innerText = calcExpression || '0'; }
-function calcRes() { try { const result = eval(calcExpression); calcExpression = result.toString(); updateCalcDisp(); } catch { document.getElementById('calcDisp').innerText = 'Error'; calcExpression = ''; } }
+function calcRes() { try { calcExpression = eval(calcExpression).toString(); updateCalcDisp(); } catch { document.getElementById('calcDisp').innerText = 'Error'; calcExpression = ''; } }
 
 dragElement(document.getElementById("calcContainer"));
 function dragElement(elmnt) {
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     if (document.getElementById("calcHeader")) { document.getElementById("calcHeader").onmousedown = dragMouseDown; }
-    function dragMouseDown(e) { e = e || window.event; e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY; document.onmouseup = closeDragElement; document.onmousemove = elementDrag; }
-    function elementDrag(e) { e = e || window.event; e.preventDefault(); pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY; pos3 = e.clientX; pos4 = e.clientY; elmnt.style.top = (elmnt.offsetTop - pos2) + "px"; elmnt.style.left = (elmnt.offsetLeft - pos1) + "px"; elmnt.style.bottom = "auto"; elmnt.style.right = "auto"; }
+    function dragMouseDown(e) { e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY; document.onmouseup = closeDragElement; document.onmousemove = elementDrag; }
+    function elementDrag(e) { e.preventDefault(); pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY; pos3 = e.clientX; pos4 = e.clientY; elmnt.style.top = (elmnt.offsetTop - pos2) + "px"; elmnt.style.left = (elmnt.offsetLeft - pos1) + "px"; elmnt.style.bottom = "auto"; elmnt.style.right = "auto"; }
     function closeDragElement() { document.onmouseup = null; document.onmousemove = null; }
 }
 
