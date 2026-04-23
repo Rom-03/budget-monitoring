@@ -20,7 +20,6 @@
 
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; color: var(--text); overflow-x: hidden; transition: 0.3s; }
 
-        /* Main App Loader */
         #mainAppLoader {
             position: fixed; inset: 0; background: var(--bg);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -173,21 +172,11 @@
         .income { background: var(--success); } .expense { background: var(--danger); } .unbudget { background: var(--warning); }
         .liability { background: #6c5ce7; } .savings { background: #00cec9; } .biz-profit { background: #4b6584; }
         
-        /* Glowing Total Spent Card */
-        .total-spent { 
-            background: #34495e; 
-            animation: borderGlow 2.5s infinite alternate;
-        }
+        .total-spent { background: #34495e; animation: borderGlow 2.5s infinite alternate; }
 
         @keyframes borderGlow {
-            from {
-                border-color: rgba(255, 255, 255, 0.1);
-                box-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
-            }
-            to {
-                border-color: rgba(255, 255, 255, 0.6);
-                box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-            }
+            from { border-color: rgba(255, 255, 255, 0.1); box-shadow: 0 0 5px rgba(255, 255, 255, 0.1); }
+            to { border-color: rgba(255, 255, 255, 0.6); box-shadow: 0 0 15px rgba(255, 255, 255, 0.3); }
         }
 
         .card-trans { 
@@ -234,6 +223,40 @@
         .cat-chip label { font-size: 9px; font-weight: 700; color: #888; text-transform: uppercase; }
         .cat-chip span { font-size: 13px; font-weight: 700; color: var(--text); }
 
+        /* SPECIAL ENVELOP SECTION STYLES */
+        .envelop-center-container {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 400px; text-align: center;
+        }
+        .envelop-btn {
+            font-size: 85px; cursor: pointer; background: none; border: none; 
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            filter: drop-shadow(0 0 10px rgba(44, 123, 229, 0.1));
+            position: relative;
+        }
+        .envelop-btn:hover { 
+            transform: scale(1.15) rotate(-5deg); 
+            filter: drop-shadow(0 0 20px rgba(44, 123, 229, 0.4));
+        }
+        .envelop-glow {
+            position: absolute; width: 100px; height: 100px; background: var(--primary);
+            border-radius: 50%; filter: blur(40px); opacity: 0.1; z-index: -1;
+            animation: pulseGlow 3s infinite;
+        }
+        @keyframes pulseGlow {
+            0% { transform: scale(1); opacity: 0.1; }
+            50% { transform: scale(1.5); opacity: 0.2; }
+            100% { transform: scale(1); opacity: 0.1; }
+        }
+
+        .msg-fade-out { animation: msgFadeOut 0.5s forwards; }
+        .msg-fade-in { animation: msgFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .floating-message { animation: floating 4s ease-in-out infinite; }
+
+        @keyframes msgFadeOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.9); } }
+        @keyframes msgFadeIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes floating { 0% { transform: translateY(0px); } 50% { transform: translateY(-8px); } 100% { transform: translateY(0px); } }
+
         @media (max-width: 768px) {
             .chart-grid { grid-template-columns: 1fr; }
             .grid-stats { grid-template-columns: 1fr 1fr; }
@@ -243,7 +266,6 @@
     </style>
 </head>
 <body>
-
 <div id="toast">Success!</div>
 <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
 
@@ -270,6 +292,7 @@
         <div style="padding: 20px 25px;"><h2 style="margin:0; font-size: 18px; color: var(--primary);">Budget Monitoring</h2></div>
         <div class="nav-scroll">
             <div class="nav-item" id="nav-overview" onclick="switchSection('overview', this)">📊 Dashboard</div>
+            <div class="nav-item" id="nav-envelop" onclick="switchSection('envelop', this)">✉️ Private</div>
             <div class="nav-item" id="nav-business-hub" onclick="switchSection('business-hub', this)">💼 Business</div>
         </div>
         <div class="sidebar-footer">
@@ -308,6 +331,10 @@
         <a class="sub-nav-link" id="link-savings" onclick="switchSection('savings')">Savings History</a>
     </div>
 
+    <div id="subNavEnvelop" class="sub-nav" style="display:none;">
+        <a class="sub-nav-link" id="link-envelop" onclick="switchSection('envelop')">Personal Message</a>
+    </div>
+
     <div id="subNavBusiness" class="sub-nav" style="display:none;">
         <a class="sub-nav-link" id="link-business-hub" onclick="switchSection('business-hub')">Summary</a>
         <a class="sub-nav-link" id="link-contribution" onclick="switchSection('contribution')">Contributions</a>
@@ -335,6 +362,16 @@
             <div class="chart-grid">
                 <div style="background:var(--card-bg); padding:20px; border-radius:12px; height:320px; box-shadow:var(--shadow);"><canvas id="budgetChart"></canvas></div>
                 <div style="background:var(--card-bg); padding:20px; border-radius:12px; height:320px; box-shadow:var(--shadow);"><canvas id="monthlyTrendChart"></canvas></div>
+            </div>
+        </div>
+
+        <div id="envelop" class="section">
+            <div class="envelop-center-container">
+                <div style="position:relative; margin-bottom: 20px;">
+                    <div class="envelop-glow"></div>
+                    <button class="envelop-btn" onclick="openFavPersonModal()">✉️</button>
+                </div>
+                <p style="color:#888; font-size:14px; font-style: italic;">A private space for words left unsaid.</p>
             </div>
         </div>
 
@@ -406,8 +443,6 @@
                 <div class="sum-card" style="background: rgba(44, 123, 229, 0.05);"><div>Total Combined</div><div id="sumCombined" style="color:var(--primary); font-weight:800; font-size:18px;">₱0.00</div></div>
             </div>
             <div class="table-container"><table><thead><tr><th>Date</th><th>Contributor</th><th>Desc</th><th>Amount</th><th>Action</th></tr></thead><tbody id="conTable"></tbody></table></div>
-            <div style="margin-top:20px; font-weight:700;">Deduction History</div>
-            <div class="table-container"><table id="conHistoryTable"><thead><tr><th>Date</th><th>Partner</th><th>Details</th><th>Amount</th></tr></thead><tbody></tbody></table></div>
         </div>
         <div id="profitshare" class="section">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3>Profit Share Overflow</h3></div>
@@ -419,6 +454,36 @@
         </div>
         <div id="business-notes" class="section">
             <div id="notesContainer"></div>
+        </div>
+    </div>
+</div>
+
+<div id="favPersonModal" class="modal-overlay">
+    <div class="modal-content" style="overflow: hidden; min-height: 250px;">
+        <div id="favChallengeContent">
+            <h3 style="text-align: center;">Identity Check</h3>
+            <div class="form-group">
+                <label class="form-label" style="text-align: center;">Who is your favorite person?</label>
+                <input type="text" id="favPersonInput" placeholder="A name for the heart..." style="text-align: center;">
+            </div>
+            <div class="btn-group">
+                <button onclick="closeModal('favPersonModal')" class="btn-cancel">Close</button>
+                <button onclick="checkFavPerson()" class="btn-save">Verify</button>
+            </div>
+        </div>
+        
+        <div id="favMessageContent" style="display:none;" class="floating-message">
+            <h3 style="color:var(--primary); border-bottom:1px solid var(--border); padding-bottom:10px; font-family: 'Georgia', serif;">A Message from Jerome</h3>
+            <div style="font-size:15px; line-height:1.7; font-style:italic; color:var(--text); max-height: 380px; overflow-y: auto; padding-right: 5px; font-family: 'Georgia', serif;">
+                I’ve spent a lot of time in the quiet lately, thinking about everything.<br><br>
+                I want to say thank you. Thank you for every chance you gave me, and for the countless times you offered me a forgiveness that I simply didn’t deserve. I see now that I wasted those moments, and I’m truly sorry for letting you go the way I did.<br><br>
+                To be honest, I'm still finding my way. Some nights are harder than others, and I’m still learning how to move forward without you.<br><br>
+                I’m not writing this to ask for anything back, or even for you to forgive me. I just wanted to be real with you one last time. I hope you are doing much better than I am, and that you're finding the happiness you deserve.
+            </div>
+            <div style="text-align:right; font-weight:bold; margin-top:20px; color:var(--primary); font-family: 'Georgia', serif; font-size: 16px;">— Jerome</div>
+            <div class="btn-group" style="margin-top:20px;">
+                <button onclick="closeModal('favPersonModal')" class="btn-save" style="width:100%; flex:none; background: #576574;">Done</button>
+            </div>
         </div>
     </div>
 </div>
@@ -489,9 +554,7 @@ async function checkLogin() {
     const text = document.getElementById('loginText');
     const inputPin = document.getElementById("passInput").value;
     
-    btn.disabled = true;
-    spinner.style.display = 'inline-block';
-    text.innerText = 'Authenticating...';
+    btn.disabled = true; spinner.style.display = 'inline-block'; text.innerText = 'Authenticating...';
 
     let cloudHash = DEFAULT_PIN_HASH;
     try {
@@ -529,9 +592,7 @@ async function load() {
         document.getElementById("loginOverlay").style.display="none"; 
         document.getElementById("mainApp").style.display="none"; 
         document.getElementById("mainAppLoader").style.display="flex"; 
-    } else {
-        return; 
-    }
+    } else { return; }
 
     const currentTheme = localStorage.getItem("theme") || "light";
     applyTheme(currentTheme);
@@ -548,7 +609,7 @@ async function load() {
             if(data.pinHash) { pinHash = data.pinHash; localStorage.setItem("dashPinHash", pinHash); }
         }
     } catch (e) { console.log("Cloud load failed."); }
-    
+
     monthSel.value = "all";
     switchSection(localStorage.getItem("activeTab") || "overview");
     
@@ -571,20 +632,33 @@ async function save() {
 }
 
 function switchSection(id, el){
-    const genTabs = ['overview', 'income', 'budget', 'unbudget', 'liability', 'savings'], bizTabs = ['business-hub', 'contribution', 'profitshare', 'harvest', 'business-notes'];
+    const genTabs = ['overview', 'income', 'budget', 'unbudget', 'liability', 'savings'], 
+          envTabs = ['envelop'],
+          bizTabs = ['business-hub', 'contribution', 'profitshare', 'harvest', 'business-notes'];
+    
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active')); 
     const target = document.getElementById(id); if(target) target.classList.add('active');
+    
     if(genTabs.includes(id)) {
         document.getElementById('subNavGeneral').style.display = 'flex';
+        document.getElementById('subNavEnvelop').style.display = 'none';
         document.getElementById('subNavBusiness').style.display = 'none';
         document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('selected'));
         document.getElementById('nav-overview').classList.add('selected');
+    } else if(envTabs.includes(id)) {
+        document.getElementById('subNavGeneral').style.display = 'none';
+        document.getElementById('subNavEnvelop').style.display = 'flex';
+        document.getElementById('subNavBusiness').style.display = 'none';
+        document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('selected'));
+        document.getElementById('nav-envelop').classList.add('selected');
     } else if(bizTabs.includes(id)) {
         document.getElementById('subNavGeneral').style.display = 'none';
+        document.getElementById('subNavEnvelop').style.display = 'none';
         document.getElementById('subNavBusiness').style.display = 'flex';
         document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('selected'));
         document.getElementById('nav-business-hub').classList.add('selected');
     }
+    
     document.querySelectorAll('.sub-nav-link').forEach(l => l.classList.remove('active'));
     const link = document.getElementById('link-' + id); if(link) link.classList.add('active');
     if(el && window.innerWidth<768) toggleSidebar(); 
@@ -594,7 +668,18 @@ function switchSection(id, el){
 function formatAmount(v){ return (v < 0 ? "-₱" : "₱") + Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:2}); }
 function showToast(m, isError = false) { const t = document.getElementById("toast"); t.innerText = m; t.classList.remove("error", "show"); void t.offsetWidth; if(isError) t.classList.add("error"); t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2500); }
 function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('active'); }
-function closeModal(id){ document.getElementById(id).style.display="none"; editId = null; }
+function closeModal(id){ 
+    document.getElementById(id).style.display="none"; 
+    editId = null;
+    if(id === 'favPersonModal') {
+        setTimeout(() => {
+            document.getElementById('favChallengeContent').classList.remove('msg-fade-out');
+            document.getElementById('favChallengeContent').style.display = 'block';
+            document.getElementById('favMessageContent').classList.remove('msg-fade-in');
+            document.getElementById('favMessageContent').style.display = 'none';
+        }, 400);
+    }
+}
 function closeConfirm(){ document.getElementById('deleteConfirmModal').style.display='none'; }
 function triggerLogout() { document.getElementById('logoutConfirmModal').style.display = 'flex'; }
 function logout() { sessionStorage.removeItem("isLoggedIn"); sessionStorage.removeItem("lastActivity"); location.reload(); }
@@ -617,10 +702,7 @@ function render(){
     const fLia=filterData(liabilities).sort((a,b) => new Date(b.date) - new Date(a.date));
     const inc = fInc.reduce((a,b)=>a+b.amount,0), bud = fExp.reduce((a,b)=>a+b.amount,0), unb = fUn.reduce((a,b)=>a+b.amount,0), lia = fLia.reduce((a,b)=>a+b.amount,0), rem = inc-(bud+unb+lia);
     
-    // Calculate and display new card
-    const totalSpentOverall = bud + unb;
-    document.getElementById("totalSpentOverall").innerText = formatAmount(totalSpentOverall);
-
+    document.getElementById("totalSpentOverall").innerText = formatAmount(bud + unb);
     document.getElementById("totalIncome").innerText=formatAmount(inc); document.getElementById("totalBudgeted").innerText=formatAmount(bud); document.getElementById("totalUnbudgeted").innerText=formatAmount(unb); document.getElementById("totalLiability").innerText=formatAmount(lia); document.getElementById("totalSavings").innerText=formatAmount(rem);
     document.getElementById("tabTotalIncomeDisplay").innerText = formatAmount(inc); document.getElementById("tabTotalBudgetedDisplay").innerText = formatAmount(bud); document.getElementById("tabTotalUnbudgetedDisplay").innerText = formatAmount(unb); document.getElementById("tabTotalLiabilityDisplay").innerText = formatAmount(lia);
     
@@ -629,25 +711,51 @@ function render(){
     document.getElementById("budgetCategoryBreakdown").innerHTML = catHtml;
     
     let totalRevenue = harvests.reduce((a, b) => a + b.amount, 0), totalExpenses = harvestTransactions.reduce((a, b) => a + b.amount, 0), netProfit = totalRevenue - totalExpenses;
-    document.getElementById("totalBizProfit").innerText = formatAmount(netProfit); document.getElementById("hubBizRev").innerText = formatAmount(totalRevenue); document.getElementById("hubBizNet").innerText = formatAmount(netProfit); document.getElementById("hubLifetimeBal").innerText = formatAmount(netProfit); document.getElementById("harvTotalRev").innerText = formatAmount(totalRevenue); document.getElementById("harvTotalExp").innerText = formatAmount(totalExpenses); document.getElementById("harvTotalNet").innerText = formatAmount(netProfit);
-    document.getElementById("topHarvestsList").innerHTML = harvests.slice().sort((a,b)=>b.amount-a.amount).slice(0,3).map(h => `<div style="display:flex; justify-content:space-between;"><span>${h.desc}</span><b>${formatAmount(h.amount)}</b></div>`).join('') || "No active accounts.";
+    document.getElementById("totalBizProfit").innerText = formatAmount(netProfit); document.getElementById("hubBizRev").innerText = formatAmount(totalRevenue); document.getElementById("hubBizNet").innerText = formatAmount(totalRevenue - totalExpenses); document.getElementById("hubLifetimeBal").innerText = formatAmount(netProfit); document.getElementById("harvTotalRev").innerText = formatAmount(totalRevenue); document.getElementById("harvTotalExp").innerText = formatAmount(totalExpenses); document.getElementById("harvTotalNet").innerText = formatAmount(netProfit);
     
     let jConTotal = contributions.filter(c => c.contributor === 'Jerome').reduce((a,b) => a + b.amount, 0), nConTotal = contributions.filter(c => c.contributor === 'Jennifer').reduce((a,b) => a + b.amount, 0);
-    let jSpent = 0, nSpent = 0, historyRows = [], jShare = 0, nShare = 0, shareHtml = "";
+    let jSpent = 0, nSpent = 0, jShare = 0, nShare = 0, shareHtml = "";
     harvestTransactions.forEach((t) => {
         let isJ = t.desc.toLowerCase().includes('jerome'), isN = t.desc.toLowerCase().includes('jennifer'), acc = harvests.find(h => h.id === t.harvestId);
-        if(isJ) { let bal = jConTotal - jSpent, ded = Math.min(t.amount, bal), over = t.amount - ded; jSpent += ded; if(ded > 0) historyRows.push({ date: t.date, who: 'Jerome', details: `${acc?.desc || 'Acc'}: ${t.desc}`, amt: ded }); if(over > 0) { jShare += over; shareHtml += `<tr><td>${t.date}</td><td>${acc?.desc || 'Acc'}</td><td>${t.desc}</td><td style="color:var(--danger)">${formatAmount(over)}</td></tr>`; } }
-        if(isN) { let bal = nConTotal - nSpent, ded = Math.min(t.amount, bal), over = t.amount - ded; nSpent += ded; if(ded > 0) historyRows.push({ date: t.date, who: 'Jennifer', details: `${acc?.desc || 'Acc'}: ${t.desc}`, amt: ded }); if(over > 0) { nShare += over; shareHtml += `<tr><td>${t.date}</td><td>${acc?.desc || 'Acc'}</td><td>${t.desc}</td><td style="color:var(--danger)">${formatAmount(over)}</td></tr>`; } }
+        if(isJ) { let bal = jConTotal - jSpent, ded = Math.min(t.amount, bal), over = t.amount - ded; jSpent += ded; if(over > 0) { jShare += over; shareHtml += `<tr><td>${t.date}</td><td>${acc?.desc || 'Acc'}</td><td>${t.desc}</td><td style="color:var(--danger)">${formatAmount(over)}</td></tr>`; } }
+        if(isN) { let bal = nConTotal - nSpent, ded = Math.min(t.amount, bal), over = t.amount - ded; nSpent += ded; if(over > 0) { nShare += over; shareHtml += `<tr><td>${t.date}</td><td>${acc?.desc || 'Acc'}</td><td>${t.desc}</td><td style="color:var(--danger)">${formatAmount(over)}</td></tr>`; } }
     });
     
-    document.getElementById("sumJerome").innerText = formatAmount(jConTotal - jSpent); document.getElementById("sumJennifer").innerText = formatAmount(nConTotal - nSpent); document.getElementById("sumCombined").innerText = formatAmount((jConTotal - jSpent) + (nConTotal - nSpent)); document.getElementById("shareJerome").innerText = formatAmount(jShare); document.getElementById("shareJennifer").innerText = formatAmount(nShare); document.getElementById("shareTable").innerHTML = shareHtml || '<tr><td colspan="4" style="text-align:center">No overflow.</td></tr>';
+    document.getElementById("sumJerome").innerText = formatAmount(jConTotal - jSpent); document.getElementById("sumJennifer").innerText = formatAmount(nConTotal - nSpent); document.getElementById("shareJerome").innerText = formatAmount(jShare); document.getElementById("shareJennifer").innerText = formatAmount(nShare); document.getElementById("shareTable").innerHTML = shareHtml || '<tr><td colspan="4" style="text-align:center">No overflow.</td></tr>';
     document.getElementById("conTable").innerHTML = contributions.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map((c) => `<tr><td>${c.date}</td><td>${c.contributor}</td><td>${c.desc}</td><td>${formatAmount(c.amount)}</td><td><button class="action-edit" onclick="openAddModal('contribution',${contributions.indexOf(c)})">Edit</button><button class="action-delete" onclick="deleteItem('con',${contributions.indexOf(c)})">Delete</button></td></tr>`).join('');
-    document.getElementById("conHistoryTable").querySelector('tbody').innerHTML = historyRows.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(r => `<tr><td>${r.date}</td><td>${r.who}</td><td>${r.details}</td><td>-${formatAmount(r.amt)}</td></tr>`).join('');
     
     const mapper = (type, label) => (d) => `<tr><td>${d.date}</td><td>${d.desc || d.cat}</td><td>${formatAmount(d.amount)}</td><td><button class="action-edit" onclick="openAddModal('${type}',${(type==='income'?incomes:type==='budget'?expenses:type==='unbudget'?unbudgeted:liabilities).indexOf(d)})">Edit</button><button class="action-delete" onclick="deleteItem('${label}',${(type==='income'?incomes:type==='budget'?expenses:type==='unbudget'?unbudgeted:liabilities).indexOf(d)})">Delete</button></td></tr>`;
     document.getElementById("incomeTable").innerHTML=fInc.map(mapper('income', 'income')).join(''); document.getElementById("expenseTable").innerHTML=fExp.map(mapper('budget', 'exp')).join(''); document.getElementById("unTable").innerHTML=fUn.map(mapper('unbudget', 'un')).join(''); document.getElementById("liaTable").innerHTML=fLia.map(mapper('liability', 'lia')).join('');
     
     updateCharts(bud, unb, lia, rem); renderHarvests(harvests); renderNotes(); updateSavingsTab();
+}
+
+/* MESSAGE SYSTEM LOGIC */
+function openFavPersonModal() {
+    document.getElementById('favPersonInput').value = '';
+    const chal = document.getElementById('favChallengeContent');
+    const msg = document.getElementById('favMessageContent');
+    chal.classList.remove('msg-fade-out');
+    msg.classList.remove('msg-fade-in');
+    chal.style.display = 'block';
+    msg.style.display = 'none';
+    document.getElementById('favPersonModal').style.display = 'flex';
+}
+
+function checkFavPerson() {
+    const person = document.getElementById('favPersonInput').value.trim();
+    if(person.toLowerCase() === 'jerome') {
+        const chal = document.getElementById('favChallengeContent');
+        const msg = document.getElementById('favMessageContent');
+        chal.classList.add('msg-fade-out');
+        setTimeout(() => {
+            chal.style.display = 'none';
+            msg.style.display = 'block';
+            msg.classList.add('msg-fade-in');
+        }, 500);
+    } else {
+        showToast("Invalid Response", true);
+    }
 }
 
 function openAddModal(type, existingId = null) {
@@ -667,7 +775,7 @@ function openAddModal(type, existingId = null) {
         if(existingId !== null) {
             let dataArr = type==='income'?incomes:type==='budget'?expenses:type==='unbudget'?unbudgeted:type==='liability'?liabilities:type==='contribution'?contributions:type==='harvest'?harvests:harvestTransactions;
             const entry = dataArr[existingId]; document.getElementById('modalDate').value = entry.date; document.getElementById('modalDesc').value = entry.desc || ''; document.getElementById('modalAmount').value = entry.amount;
-            if(type === 'budget') document.getElementById('modalCat').value = entry.cat; if(type === 'contribution') document.getElementById('modalContributor').value = entry.contributor; if(type === 'harvest_expense') document.getElementById('modalAccountSelect').value = entry.harvestId;
+            if(type === 'budget') document.getElementById('modalCat').value = entry.cat; if(type === 'contribution') document.getElementById('modalContributor').value = entry.contributor;
         } else { document.getElementById('modalDate').value = new Date().toISOString().split('T')[0]; document.getElementById('modalDesc').value = ''; document.getElementById('modalAmount').value = ''; }
     }
     document.getElementById('addModal').style.display = 'flex';
@@ -683,7 +791,7 @@ function processAdd() {
         let targetArr = currentAddType==='income'?incomes:currentAddType==='budget'?expenses:currentAddType==='unbudget'?unbudgeted:currentAddType==='liability'?liabilities:currentAddType==='contribution'?contributions:currentAddType==='harvest'?harvests:harvestTransactions;
         if(editId !== null) {
             let existing = targetArr[editId]; existing.date = date; existing.desc = desc; existing.amount = amt;
-            if(currentAddType === 'budget') existing.cat = document.getElementById('modalCat').value; if(currentAddType === 'contribution') existing.contributor = document.getElementById('modalContributor').value; if(currentAddType === 'harvest_expense') document.getElementById('modalAccountSelect').value = entry.harvestId;
+            if(currentAddType === 'budget') existing.cat = document.getElementById('modalCat').value; if(currentAddType === 'contribution') existing.contributor = document.getElementById('modalContributor').value;
         } else {
             let newData = { date, desc, amount: amt };
             if(currentAddType === 'budget') newData.cat = document.getElementById('modalCat').value; if(currentAddType === 'contribution') newData.contributor = document.getElementById('modalContributor').value; if(currentAddType === 'harvest_expense') newData.harvestId = document.getElementById('modalAccountSelect').value; if(currentAddType === 'harvest') newData.id = Date.now().toString();
@@ -781,12 +889,7 @@ function renderNotes() {
     container.innerHTML = html;
 }
 
-function updateActivity() { sessionStorage.setItem("lastActivity", Date.now()); }
-document.addEventListener('click', updateActivity);
-document.addEventListener('keypress', updateActivity);
-function checkTimeout() { const last = sessionStorage.getItem("lastActivity"); if (sessionStorage.getItem("isLoggedIn") === "true" && last && (Date.now() - last > 3600000)) { logout(); } }
-setInterval(checkTimeout, 10000); 
-
+let calcExpression = '';
 function toggleCalc() { const calc = document.getElementById('calcContainer'); calc.style.display = (calc.style.display === 'flex') ? 'none' : 'flex'; }
 function minimizeCalc() { document.getElementById('calcContainer').classList.toggle('minimized'); }
 function calcNum(n) { calcExpression += n; updateCalcDisp(); }
