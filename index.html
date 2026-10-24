@@ -1,811 +1,1304 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Budget Monitoring - Business Edition</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Asset Inventory - Jerome</title>
+
+    <!-- Web Tab Favicon Logo -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><path fill='%23dc2626' d='M64 32C28.7 32 0 60.7 0 96V384c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H64zM224 160V352H160V160h64zm96 0v64H288V160h32zm0 128v64H288V288h32z'/></svg>">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+      import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyCJv-JSz5O9GHKToSxCtzu6TPVi6aPvtKY",
+        authDomain: "assetinventory-9d642.firebaseapp.com",
+        projectId: "assetinventory-9d642",
+        storageBucket: "assetinventory-9d642.firebasestorage.app",
+        messagingSenderId: "702497274335",
+        appId: "1:702497274335:web:4bc2cd9844709a59be6c6a",
+        measurementId: "G-PVKHDT1FD7"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      window.firebaseDb = db;
+      window.collection = collection;
+      window.addDoc = addDoc;
+      window.getDocs = getDocs;
+      window.doc = doc;
+      window.deleteDoc = deleteDoc;
+      window.updateDoc = updateDoc;
+      window.setDoc = setDoc;
+
+      window.addEventListener('DOMContentLoaded', () => {
+          const savedTheme = localStorage.getItem('jerome_theme') || 'light';
+          if (savedTheme === 'dark') {
+              document.documentElement.classList.remove('light');
+              document.documentElement.classList.add('dark');
+              const icon = document.getElementById('theme-icon');
+              if(icon) icon.className = 'fa-solid fa-sun text-amber-300 text-xs sm:text-sm';
+          }
+
+          loadAllDataFromFirebase();
+
+          const savedTab = localStorage.getItem('jerome_active_tab') || 'dashboard';
+          const savedSubTab = localStorage.getItem('jerome_active_subtab') || 'computer';
+          switchTab(savedTab, false);
+          if(savedTab === 'devices') {
+              switchDeviceSubTab(savedSubTab, false);
+          }
+      });
+    </script>
+
     <style>
-        :root { 
-            --primary: #2c7be5; --success: #00b894; --danger: #ff4757; --warning: #e17055; 
-            --dark: #12141d; --bg: #f4f7fc; --card-bg: white; --text: #333; 
-            --border: #dee2e6; --shadow: 0 4px 20px rgba(0,0,0,0.08); 
-            --sidebar-width: 240px;
-            --input-bg: #f9fbfd;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        [data-theme="dark"] { 
-            --bg: #1a1c23; --card-bg: #242731; --text: #eeeeee; --border: #323541; 
-            --shadow: 0 4px 20px rgba(0,0,0,0.3); --input-bg: #2a2e39;
+        .animate-fade {
+            animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
-
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; color: var(--text); overflow-x: hidden; transition: 0.3s; }
-
-        /* Main App Loader */
-        #mainAppLoader {
-            position: fixed; inset: 0; background: var(--bg);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 5000; transition: opacity 0.4s ease;
+        @keyframes scaleUp {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
         }
-        .app-spinner {
-            width: 40px; height: 40px; border: 4px solid rgba(44, 123, 229, 0.1);
-            border-top-color: var(--primary); border-radius: 50%;
-            animation: spin 0.8s linear infinite; margin-bottom: 15px;
+        .animate-scale {
+            animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
-        .loader-text { font-size: 13px; font-weight: 600; color: var(--primary); letter-spacing: 1px; }
-
-        .tab-total-banner {
-            background: var(--card-bg); padding: 15px 20px; border-radius: 12px;
-            border-left: 5px solid var(--primary); margin-bottom: 20px;
-            box-shadow: var(--shadow); display: flex; justify-content: space-between; align-items: center;
-        }
-        .tab-total-banner .banner-label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
-        .tab-total-banner .banner-value { font-size: 20px; font-weight: 800; color: var(--text); }
-
-        .theme-switch-wrapper { display: flex; align-items: center; gap: 8px; }
-        .theme-switch { position: relative; display: inline-block; width: 34px; height: 18px; }
-        .theme-switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; inset: 0; background-color: rgba(255,255,255,0.3); transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--success); }
-        input:checked + .slider:before { transform: translateX(16px); }
-
-        #loginOverlay {
-            position: fixed; inset: 0; 
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
-            display: flex; align-items: center; justify-content: center; z-index: 9999;
-            animation: fadeInOverlay 0.6s ease-out;
-        }
-
-        .login-card {
-            background: var(--card-bg); padding: 30px 25px; border-radius: 16px; width: 310px;
-            text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
-            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .login-brand { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: var(--primary); font-weight: 800; margin-bottom: 5px; display: block; }
-        .login-card h3 { margin: 0 0 8px; font-size: 20px; color: var(--text); font-weight: 700; }
-        .login-card p { color: #888; font-size: 12px; margin: 0 0 25px; line-height: 1.4; }
-        
-        #passInput {
-            text-align: center; font-size: 22px; letter-spacing: 8px; padding: 12px;
-            border: 1.5px solid var(--border); border-radius: 10px; transition: all 0.2s ease;
-            background: var(--input-bg); width: 100%; box-sizing: border-box; margin-bottom: 20px;
-        }
-
-        #passInput:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(44, 123, 229, 0.15); outline: none; }
-        
-        .btn-unlock { 
-            width: 100%; padding: 12px; background: var(--primary); color: white; border: none; 
-            border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; 
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .btn-unlock:hover { background: #1a5bb4; transform: translateY(-1px); }
-        .btn-unlock:disabled { background: #4b6584; cursor: not-allowed; transform: none; }
-
-        .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 0.8s linear infinite; display: none; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes shake { 0%, 100% {transform:translateX(0);} 25% {transform:translateX(-8px);} 75% {transform:translateX(8px);} }
-
-        #toast {
-            position: fixed; top: 20px; left: 50%; transform: translate(-50%, -150%);
-            padding: 12px 30px; color: white; border-radius: 50px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
-            z-index: 9999; transition: transform 0.5s; font-weight: 600; font-size: 14px; pointer-events: none;
-        }
-        #toast.show { transform: translate(-50%, 0); background: var(--success); }
-        #toast.error { background: var(--danger) !important; }
-
-        .sidebar {
-            position: fixed; left: calc(-1 * var(--sidebar-width)); top: 0; height: 100%;
-            width: var(--sidebar-width); background: var(--card-bg); border-right: 1px solid var(--border);
-            transition: transform 0.3s ease; z-index: 2000; display: flex; flex-direction: column;
-        }
-        .sidebar.open { transform: translateX(var(--sidebar-width)); }
-        .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; z-index: 1500; backdrop-filter: blur(2px); }
-        .sidebar-overlay.active { display: block; }
-
-        .nav-scroll { flex: 1; overflow-y: auto; padding-top: 20px; }
-        .nav-item { padding: 12px 25px; font-size: 14px; cursor: pointer; color: var(--text); font-weight: 600; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
-        .nav-item:hover { background: rgba(44, 123, 229, 0.05); }
-        .nav-item.selected { color: var(--primary); background: rgba(44, 123, 229, 0.08); border-left: 4px solid var(--primary); }
-        .sidebar-footer { padding: 20px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
-        
-        .sidebar-link-btn { cursor: pointer; font-size: 12px; font-weight: bold; opacity: 0.8; transition: 0.2s; }
-        .sidebar-link-btn:hover { opacity: 1; }
-        .reset-link { color: var(--danger); }
-        .util-link { color: var(--text); }
-
-        header { 
-            background: linear-gradient(135deg, var(--primary), #1a5bb4); 
-            color: white; padding: 0 20px; height: 60px; display: flex; 
-            align-items: center; justify-content: space-between; position: sticky; 
-            top: 0; z-index: 1100; 
-        }
-        .hamburger { width: 35px; height: 35px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; cursor: pointer; background: rgba(255,255,255,0.1); border: none; border-radius: 6px; }
-        .hamburger span { width: 18px; height: 2px; background: white; border-radius: 2px; }
-
-        .sub-nav { 
-            background: var(--card-bg); border-bottom: 1px solid var(--border); 
-            padding: 0 20px; display: flex; gap: 20px; overflow-x: auto; 
-            white-space: nowrap; position: sticky; top: 60px; z-index: 1090;
-            box-shadow: 0 4px 6px -2px rgba(0,0,0,0.05); scrollbar-width: none;
-        }
-        .sub-nav::-webkit-scrollbar { display: none; }
-        
-        .sub-nav-link { 
-            padding: 15px 5px; font-size: 13px; font-weight: 600; color: #888; 
-            text-decoration: none; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s;
-        }
-        .sub-nav-link:hover { color: var(--primary); }
-        .sub-nav-link.active { color: var(--primary); border-bottom-color: var(--primary); }
-
-        .modal-overlay, .confirm-overlay { 
-            display: none; position: fixed; inset: 0; background: rgba(18, 20, 29, 0.6); 
-            z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(5px); 
-        }
-        .modal-content { 
-            background: var(--card-bg); padding: 30px; border-radius: 16px; width: 360px; max-width: 90%;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); border: 1px solid var(--border);
-        }
-        .modal-content h3 { margin-top: 0; font-size: 18px; font-weight: 700; margin-bottom: 20px; color: var(--primary); }
-
-        .form-group { margin-bottom: 16px; }
-        .form-label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #888; margin-bottom: 6px; letter-spacing: 0.5px; }
-        
-        input[type="text"], input[type="number"], input[type="date"], input[type="password"], select, textarea {
-            width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); 
-            background: var(--input-bg); color: var(--text); font-size: 14px; outline: none; 
-            transition: all 0.2s; box-sizing: border-box;
-        }
-
-        .btn-group { display: flex; gap: 12px; margin-top: 25px; }
-        .btn-cancel { flex: 1; padding: 12px; border: none; background: transparent; color: #888; cursor: pointer; font-weight: 600; border-radius: 8px; transition: 0.2s; }
-        .btn-save { flex: 1; padding: 12px; border: none; background: var(--primary); color: white; cursor: pointer; font-weight: 600; border-radius: 8px; }
-
-        .main-content { padding: 20px; max-width: 1100px; margin: 0 auto; }
-        .controls-bar { background: var(--card-bg); padding: 12px; border-radius: 10px; display: flex; gap: 10px; align-items: center; margin-bottom: 20px; box-shadow: var(--shadow); flex-wrap: wrap; }
-        
-        .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
-        .card { padding: 12px; border-radius: 10px; font-size: 10px; color: white; text-align: center; border: 2px solid transparent; }
-        .card span { font-size: 16px; font-weight: 700; display: block; margin-top: 5px; }
-        .income { background: var(--success); } .expense { background: var(--danger); } .unbudget { background: var(--warning); }
-        .liability { background: #6c5ce7; } .savings { background: #00cec9; } .biz-profit { background: #4b6584; }
-        
-        /* Glowing Total Spent Card */
-        .total-spent { 
-            background: #34495e; 
-            animation: borderGlow 2.5s infinite alternate;
-        }
-
-        @keyframes borderGlow {
-            from {
-                border-color: rgba(255, 255, 255, 0.1);
-                box-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
-            }
-            to {
-                border-color: rgba(255, 255, 255, 0.6);
-                box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-            }
-        }
-
-        .card-trans { 
-            background: var(--card-bg) !important; color: var(--text) !important; border: 1px solid var(--border);
-            border-top: 4px solid var(--accent-color); box-shadow: var(--shadow);
-            display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 15px 10px;
-        }
-        .card-trans small { font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
-        .card-trans span { color: var(--text); font-size: 18px; margin-top: 8px; }
-
-        .chart-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; margin-bottom: 30px; }
-        .table-container { width: 100%; overflow-x: auto; border-radius: 12px; box-shadow: var(--shadow); background: var(--card-bg); margin-bottom: 30px; border: 1px solid var(--border); }
-        table { width: 100%; border-collapse: collapse; min-width: 500px; }
-        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border); font-size: 13px; }
-        
-        .action-delete { color: var(--danger); border: none; background: none; cursor: pointer; font-size: 11px; font-weight: bold; text-decoration: underline; }
-        .action-edit { color: var(--primary); border: none; background: none; cursor: pointer; font-size: 11px; font-weight: bold; text-decoration: underline; margin-right: 10px;}
-        
-        .add-btn { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; white-space: nowrap; }
-        .section { display: none; }
-        .section.active { display: block; animation: fadeIn 0.3s ease; }
-        
-        .sum-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .sum-card { background: var(--card-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--border); text-align: center; }
-        .note-card { background: var(--card-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 15px; box-shadow: var(--shadow); }
-
-        #calcContainer {
-            position: fixed; bottom: 20px; right: 20px; width: 220px; background: var(--card-bg);
-            border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow);
-            z-index: 4000; display: none; flex-direction: column; overflow: hidden; user-select: none;
-        }
-        .calc-header { background: var(--primary); color: white; padding: 8px 12px; font-size: 12px; font-weight: bold; display: flex; justify-content: space-between; cursor: grab; }
-        .calc-display { padding: 15px; text-align: right; font-size: 20px; background: var(--input-bg); border-bottom: 1px solid var(--border); min-height: 30px; word-break: break-all; }
-        .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); }
-        .calc-grid button { border: none; background: var(--card-bg); padding: 12px; font-size: 14px; cursor: pointer; transition: 0.1s; color: var(--text); }
-        .calc-grid button:hover { background: var(--input-bg); }
-        .calc-grid .op { background: var(--input-bg); color: var(--primary); font-weight: bold; }
-        .calc-grid .eq { background: var(--primary); color: white; }
-        #calcContainer.minimized { height: 35px; width: 150px; }
-        #calcContainer.minimized .calc-display, #calcContainer.minimized .calc-grid { display: none; }
-
-        .category-breakdown { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; }
-        .cat-chip { background: var(--input-bg); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; }
-        .cat-chip label { font-size: 9px; font-weight: 700; color: #888; text-transform: uppercase; }
-        .cat-chip span { font-size: 13px; font-weight: 700; color: var(--text); }
-
-        @media (max-width: 768px) {
-            .chart-grid { grid-template-columns: 1fr; }
-            .grid-stats { grid-template-columns: 1fr 1fr; }
-            header { padding: 0 10px; }
-        }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
-<body>
+<body class="bg-slate-100 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 antialiased min-h-screen flex flex-col selection:bg-red-600 selection:text-white transition-colors duration-200">
 
-<div id="toast">Success!</div>
-<div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
-
-<div id="mainAppLoader" style="display: none;">
-    <div class="app-spinner"></div>
-    <div class="loader-text">SYNCING DASHBOARD...</div>
-</div>
-
-<div id="loginOverlay">
-    <div class="login-card">
-        <span class="login-brand">Private Portal</span>
-        <h3>Budget Monitoring</h3>
-        <p>Please enter your security pin to access the financial dashboard.</p>
-        <input type="password" id="passInput" maxlength="4" placeholder="••••" autocomplete="off">
-        <button id="loginBtn" onclick="checkLogin()" class="btn-unlock">
-            <span class="spinner" id="loginSpinner"></span>
-            <span id="loginText">Unlock Dashboard</span>
-        </button>
-    </div>
-</div>
-
-<div id="mainApp" style="display:none;">
-    <nav class="sidebar" id="sidebar">
-        <div style="padding: 20px 25px;"><h2 style="margin:0; font-size: 18px; color: var(--primary);">Budget Monitoring</h2></div>
-        <div class="nav-scroll">
-            <div class="nav-item" id="nav-overview" onclick="switchSection('overview', this)">📊 Dashboard</div>
-            <div class="nav-item" id="nav-business-hub" onclick="switchSection('business-hub', this)">💼 Business</div>
-        </div>
-        <div class="sidebar-footer">
-            <div class="sidebar-link-btn util-link" onclick="openPinModal()">🔑 Change PIN</div>
-            <div class="sidebar-link-btn util-link" onclick="exportData()">📤 Export Data</div>
-            <div class="sidebar-link-btn util-link" onclick="document.getElementById('importInput').click()">📥 Import Data</div>
-            <input type="file" id="importInput" style="display:none" onchange="importData(event)" accept=".json">
-            <div class="sidebar-link-btn reset-link" onclick="triggerFullReset()">⚠️ Reset Data</div>
-        </div>
-    </nav>
-
-    <header>
-        <div style="display:flex; align-items:center; gap:12px;">
-            <button class="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
-            <div style="font-weight:700; font-size:16px;">Budget Monitoring</div>
-        </div>
-        <div style="display:flex; align-items:center; gap:12px;">
-            <div class="theme-switch-wrapper">
-                <span style="font-size:10px; opacity:0.8;">🌙</span>
-                <label class="theme-switch">
-                    <input type="checkbox" id="themeToggle" onchange="toggleTheme()">
-                    <span class="slider"></span>
-                </label>
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-900 dark:bg-slate-900 text-white shadow-lg sticky top-0 z-40 border-b border-slate-800">
+        <div class="w-full px-3 sm:px-8 h-14 sm:h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <div class="bg-gradient-to-br from-red-600 to-red-700 p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-white shadow-md shadow-red-900/30 flex items-center justify-center">
+                    <i class="fa-solid fa-boxes-stacked text-xs sm:text-base"></i>
+                </div>
+                <div>
+                    <span class="text-xs sm:text-base font-bold tracking-tight block leading-tight">Asset Inventory</span>
+                    <span class="text-[8px] sm:text-[9px] text-slate-400 font-medium tracking-wider uppercase">Jerome Cloud Platform</span>
+                </div>
             </div>
-            <button onclick="save()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:5px 10px; border-radius:12px; cursor:pointer; font-size:11px;">🔄 Sync</button>
-            <button onclick="triggerLogout()" style="background:rgba(255, 71, 87, 0.2); border:none; color:white; padding:5px 10px; border-radius:12px; cursor:pointer; font-size:11px;">Logout</button>
+            
+            <div class="flex items-center space-x-1.5 sm:space-x-3">
+                <!-- Dark Mode Toggle -->
+                <button onclick="toggleDarkMode()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-slate-700 text-xs flex items-center justify-center transition-all" title="Toggle Dark/Light Mode">
+                    <i id="theme-icon" class="fa-solid fa-moon text-amber-400 text-xs sm:text-sm"></i>
+                </button>
+
+                <!-- Data Tools -->
+                <button onclick="exportDataJSON()" class="bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white text-[11px] sm:text-xs px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg font-medium transition-all flex items-center space-x-1 border border-slate-700/80 shadow-sm" title="Export Backup">
+                    <i class="fa-solid fa-cloud-arrow-down text-emerald-400"></i><span class="hidden md:inline">Export JSON</span>
+                </button>
+                <label class="bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white text-[11px] sm:text-xs px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg font-medium transition-all flex items-center space-x-1 border border-slate-700/80 shadow-sm cursor-pointer" title="Import Backup">
+                    <i class="fa-solid fa-cloud-arrow-up text-blue-400"></i><span class="hidden md:inline">Import JSON</span>
+                    <input type="file" id="importFile" accept=".json" onchange="importDataJSON(event)" class="hidden">
+                </label>
+                <button onclick="confirmSystemReset()" class="bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 text-[11px] sm:text-xs px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg font-medium transition-all flex items-center space-x-1 border border-rose-900/50 shadow-sm" title="Clear All Data">
+                    <i class="fa-solid fa-triangle-exclamation text-rose-400"></i><span class="hidden md:inline">Reset</span>
+                </button>
+
+                <div class="flex items-center space-x-2 border-l border-slate-800 pl-2 sm:pl-3 ml-1">
+                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-red-600 to-rose-500 flex items-center justify-center font-bold text-[10px] sm:text-xs shadow-inner text-white">
+                        J
+                    </div>
+                    <div class="hidden md:block text-left">
+                        <span class="text-xs font-semibold block leading-tight text-slate-200">Jerome Admin</span>
+                        <span class="text-[10px] text-emerald-400 font-medium block">● Online</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </header>
 
-    <div id="subNavGeneral" class="sub-nav" style="display:none;">
-        <a class="sub-nav-link" id="link-overview" onclick="switchSection('overview')">Overview</a>
-        <a class="sub-nav-link" id="link-income" onclick="switchSection('income')">Income</a>
-        <a class="sub-nav-link" id="link-budget" onclick="switchSection('budget')">Budgeted</a>
-        <a class="sub-nav-link" id="link-unbudget" onclick="switchSection('unbudget')">Unbudgeted</a>
-        <a class="sub-nav-link" id="link-liability" onclick="switchSection('liability')">Liability</a>
-        <a class="sub-nav-link" id="link-savings" onclick="switchSection('savings')">Savings History</a>
-    </div>
-
-    <div id="subNavBusiness" class="sub-nav" style="display:none;">
-        <a class="sub-nav-link" id="link-business-hub" onclick="switchSection('business-hub')">Summary</a>
-        <a class="sub-nav-link" id="link-contribution" onclick="switchSection('contribution')">Contributions</a>
-        <a class="sub-nav-link" id="link-profitshare" onclick="switchSection('profitshare')">Profit Share</a>
-        <a class="sub-nav-link" id="link-harvest" onclick="switchSection('harvest')">Harvest Accounts</a>
-        <a class="sub-nav-link" id="link-business-notes" onclick="switchSection('business-notes')">Notes</a>
-    </div>
-
-    <div class="main-content">
-        <div class="controls-bar">
-            <select id="month" style="width:130px;"></select>
-            <select id="year" style="width:90px;"></select>
-        </div>
-
-        <div id="overview" class="section">
-            <div class="grid-stats">
-                <div class="card income">Income<br><span id="totalIncome">₱0.00</span></div>
-                <div class="card total-spent">Total Spending<br><span id="totalSpentOverall">₱0.00</span></div>
-                <div class="card biz-profit">Net Business Profit (All-Time)<br><span id="totalBizProfit">₱0.00</span></div>
-                <div class="card expense">Budgeted<br><span id="totalBudgeted">₱0.00</span></div>
-                <div class="card unbudget">Unbudgeted<br><span id="totalUnbudgeted">₱0.00</span></div>
-                <div class="card liability">Liability<br><span id="totalLiability">₱0.00</span></div>
-                <div class="card savings">Saved<br><span id="totalSavings">₱0.00</span></div>
-            </div>
-            <div class="chart-grid">
-                <div style="background:var(--card-bg); padding:20px; border-radius:12px; height:320px; box-shadow:var(--shadow);"><canvas id="budgetChart"></canvas></div>
-                <div style="background:var(--card-bg); padding:20px; border-radius:12px; height:320px; box-shadow:var(--shadow);"><canvas id="monthlyTrendChart"></canvas></div>
+    <!-- Main Navigation Tabs -->
+    <nav class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm sticky top-14 sm:top-16 z-30 transition-colors duration-200">
+        <div class="w-full px-3 sm:px-8">
+            <div class="flex space-x-1 sm:space-x-8 overflow-x-auto scrollbar-none">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="tab-btn py-3 sm:py-4 px-2 sm:px-3 border-b-2 font-semibold text-[11px] sm:text-xs uppercase tracking-wider border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:border-slate-300 flex items-center space-x-1.5 sm:space-x-2 whitespace-nowrap transition-all">
+                    <i class="fa-solid fa-chart-pie text-xs sm:text-sm"></i><span>Dashboard</span>
+                </button>
+                <button onclick="switchTab('devices')" id="nav-devices" class="tab-btn py-3 sm:py-4 px-2 sm:px-3 border-b-2 font-semibold text-[11px] sm:text-xs uppercase tracking-wider border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:border-slate-300 flex items-center space-x-1.5 sm:space-x-2 whitespace-nowrap transition-all">
+                    <i class="fa-solid fa-laptop text-xs sm:text-sm"></i><span>Devices</span>
+                </button>
+                <button onclick="switchTab('branch')" id="nav-branch" class="tab-btn py-3 sm:py-4 px-2 sm:px-3 border-b-2 font-semibold text-[11px] sm:text-xs uppercase tracking-wider border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:border-slate-300 flex items-center space-x-1.5 sm:space-x-2 whitespace-nowrap transition-all">
+                    <i class="fa-solid fa-store text-xs sm:text-sm"></i><span>Branch</span>
+                </button>
+                <button onclick="switchTab('hub')" id="nav-hub" class="tab-btn py-3 sm:py-4 px-2 sm:px-3 border-b-2 font-semibold text-[11px] sm:text-xs uppercase tracking-wider border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:border-slate-300 flex items-center space-x-1.5 sm:space-x-2 whitespace-nowrap transition-all">
+                    <i class="fa-solid fa-warehouse text-xs sm:text-sm"></i><span>Delivery Hub</span>
+                </button>
+                <button onclick="switchTab('cctv')" id="nav-cctv" class="tab-btn py-3 sm:py-4 px-2 sm:px-3 border-b-2 font-semibold text-[11px] sm:text-xs uppercase tracking-wider border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:border-slate-300 flex items-center space-x-1.5 sm:space-x-2 whitespace-nowrap transition-all">
+                    <i class="fa-solid fa-video text-xs sm:text-sm"></i><span>CCTV</span>
+                </button>
             </div>
         </div>
+    </nav>
 
-        <div id="business-hub" class="section">
-            <h3 style="margin-top:0;">Business Performance Intelligence (Lifetime)</h3>
-            <div class="sum-grid">
-                <div class="sum-card"><div>Lifetime Revenue</div><div id="hubBizRev" style="color:var(--primary); font-size:20px; font-weight:800;">₱0.00</div></div>
-                <div class="sum-card"><div>Net Business Profit</div><div id="hubBizNet" style="color:var(--success); font-size:20px; font-weight:800;">₱0.00</div></div>
-                <div class="sum-card"><div>Lifetime Margin</div><div id="hubMargin" style="color:var(--warning); font-size:20px; font-weight:800;">0%</div></div>
-                <div class="sum-card" style="border: 1px solid var(--primary); background: rgba(44, 123, 229, 0.05);"><div>Current Balance</div><div id="hubLifetimeBal" style="color:var(--primary); font-size:20px; font-weight:800;">₱0.00</div></div>
-            </div>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px; margin-top:20px;">
-                <div class="note-card"><h4 style="margin:0 0 10px 0; color:var(--primary);">Lifetime Expense Analysis</h4><div id="bizExpenseBreakdown" style="font-size:13px; line-height:2;">No business expenses recorded.</div></div>
-                <div class="note-card"><h4 style="margin:0 0 10px 0; color:var(--success);">Top Harvest Accounts</h4><div id="topHarvestsList" style="font-size:13px; line-height:2;">No active harvest accounts.</div></div>
-            </div>
-        </div>
+    <!-- Full Screen Content Area -->
+    <main class="w-full px-3 sm:px-8 py-5 sm:py-6 flex-1 animate-fade">
 
-        <div id="harvest" class="section">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
-                <h3>Harvest Accounts</h3>
-                <div style="display:flex; align-items:center; gap:15px;">
-                    <div class="theme-switch-wrapper" style="background: var(--input-bg); padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border);">
-                        <span style="font-size:10px; font-weight:bold; color:var(--text);">SHOW ALL HISTORY</span>
-                        <label class="theme-switch"><input type="checkbox" id="harvestShowAllToggle" onchange="toggleHarvestShowAll()"><span class="slider"></span></label>
+        <!-- ================= DASHBOARD TAB ================= -->
+        <div id="tab-dashboard" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Devices</p>
+                        <h3 id="stat-devices" class="text-3xl font-extrabold text-slate-800 dark:text-slate-100 mt-1">0</h3>
                     </div>
-                    <button class="add-btn" style="background:var(--success)" onclick="openAddModal('harvest')">+ New Account</button>
-                    <button class="add-btn" style="background:var(--danger)" onclick="openAddModal('harvest_expense')">+ Add Expense</button>
+                    <div class="w-14 h-14 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 rounded-2xl flex items-center justify-center text-xl shadow-inner"><i class="fa-solid fa-laptop"></i></div>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active Branches</p>
+                        <h3 id="stat-branches" class="text-3xl font-extrabold text-slate-800 dark:text-slate-100 mt-1">0</h3>
+                    </div>
+                    <div class="w-14 h-14 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center text-xl shadow-inner"><i class="fa-solid fa-store"></i></div>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Delivery Hubs</p>
+                        <h3 id="stat-hubs" class="text-3xl font-extrabold text-slate-800 dark:text-slate-100 mt-1">0</h3>
+                    </div>
+                    <div class="w-14 h-14 bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded-2xl flex items-center justify-center text-xl shadow-inner"><i class="fa-solid fa-warehouse"></i></div>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">CCTV Units</p>
+                        <h3 id="stat-cctv" class="text-3xl font-extrabold text-slate-800 dark:text-slate-100 mt-1">0</h3>
+                    </div>
+                    <div class="w-14 h-14 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center text-xl shadow-inner"><i class="fa-solid fa-video"></i></div>
                 </div>
             </div>
-            <div class="grid-stats" style="margin-bottom: 25px;">
-                <div class="card card-trans" style="--accent-color: var(--primary);"><small>Total Revenue</small><span id="harvTotalRev">₱0.00</span></div>
-                <div class="card card-trans" style="--accent-color: var(--danger);"><small>Total Expenses</small><span id="harvTotalExp">₱0.00</span></div>
-                <div class="card card-trans" style="--accent-color: var(--success);"><small>Net Business Profit</small><span id="harvTotalNet">₱0.00</span></div>
+        </div>
+
+        <!-- ================= DEVICES TAB ================= -->
+        <div id="tab-devices" class="tab-content hidden space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100">Device Inventory Management</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Track computers, biometric recognition, and network routers synced to cloud.</p>
+                </div>
+                <button onclick="openModal('computer', 'add')" id="addDeviceBtn" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all shadow-md shadow-red-600/20 flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-plus"></i><span>Add Computer Record</span>
+                </button>
             </div>
-            <div id="harvestContainer"></div>
-        </div>
 
-        <div id="income" class="section">
-            <div class="tab-total-banner"><span class="banner-label">Filtered Income Total</span><span class="banner-value" id="tabTotalIncomeDisplay">₱0.00</span></div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3>Income</h3><button class="add-btn" onclick="openAddModal('income')">+ Add Income</button></div>
-            <div class="table-container"><table><thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Action</th></tr></thead><tbody id="incomeTable"></tbody></table></div>
-        </div>
-        <div id="budget" class="section">
-            <div class="tab-total-banner" style="border-left-color: var(--danger);"><span class="banner-label">Filtered Budgeted Total</span><span class="banner-value" id="tabTotalBudgetedDisplay">₱0.00</span></div>
-            <div class="category-breakdown" id="budgetCategoryBreakdown"></div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3>Budgeted</h3><button class="add-btn" onclick="openAddModal('budget')">+ Add Expense</button></div>
-            <div class="table-container"><table><thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Action</th></tr></thead><tbody id="expenseTable"></tbody></table></div>
-        </div>
-        <div id="unbudget" class="section">
-            <div class="tab-total-banner" style="border-left-color: var(--warning);"><span class="banner-label">Filtered Unbudgeted Total</span><span class="banner-value" id="tabTotalUnbudgetedDisplay">₱0.00</span></div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3>Unbudgeted</h3><button class="add-btn" onclick="openAddModal('unbudget')">+ Add Entry</button></div>
-            <div class="table-container"><table><thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Action</th></tr></thead><tbody id="unTable"></tbody></table></div>
-        </div>
-        <div id="liability" class="section">
-            <div class="tab-total-banner" style="border-left-color: #6c5ce7;"><span class="banner-label">Filtered Liability Total</span><span class="banner-value" id="tabTotalLiabilityDisplay">₱0.00</span></div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3>Liability</h3><button class="add-btn" onclick="openAddModal('liability')">+ Add Debt</button></div>
-            <div class="table-container"><table><thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Action</th></tr></thead><tbody id="liaTable"></tbody></table></div>
-        </div>
-        <div id="savings" class="section">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3>Savings History</h3><select id="savingsFilter" onchange="updateSavingsTab()" style="width:120px; padding:6px;"><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select></div>
-            <div class="table-container"><table><thead><tr><th>Period</th><th>Net Savings</th></tr></thead><tbody id="savingsTable"></tbody></table></div>
-            <div class="sum-card" style="border: 2px solid var(--primary);"><div>Grand Total Savings</div><div id="grandTotalDisplay" style="font-size:24px; font-weight:800;">₱0.00</div></div>
-        </div>
-        <div id="contribution" class="section">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3>Partner Contributions</h3><button class="add-btn" onclick="openAddModal('contribution')">+ Add Contribution</button></div>
-            <div class="sum-grid">
-                <div class="sum-card"><div>Jerome Balance</div><div id="sumJerome" style="color:var(--primary); font-weight:700;">₱0.00</div></div>
-                <div class="sum-card"><div>Jennifer Balance</div><div id="sumJennifer" style="color:var(--success); font-weight:700;">₱0.00</div></div>
-                <div class="sum-card" style="background: rgba(44, 123, 229, 0.05);"><div>Total Combined</div><div id="sumCombined" style="color:var(--primary); font-weight:800; font-size:18px;">₱0.00</div></div>
+            <div class="flex space-x-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto">
+                <button onclick="switchDeviceSubTab('computer')" id="sub-nav-computer" class="device-sub-btn px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider bg-red-600 text-white transition-all shadow-sm whitespace-nowrap">Computer</button>
+                <button onclick="switchDeviceSubTab('facerecog')" id="sub-nav-facerecog" class="device-sub-btn px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 transition-all whitespace-nowrap">Face Recognition</button>
+                <button onclick="switchDeviceSubTab('mikrotik')" id="sub-nav-mikrotik" class="device-sub-btn px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 transition-all whitespace-nowrap">Mikrotik</button>
             </div>
-            <div class="table-container"><table><thead><tr><th>Date</th><th>Contributor</th><th>Desc</th><th>Amount</th><th>Action</th></tr></thead><tbody id="conTable"></tbody></table></div>
-            <div style="margin-top:20px; font-weight:700;">Deduction History</div>
-            <div class="table-container"><table id="conHistoryTable"><thead><tr><th>Date</th><th>Partner</th><th>Details</th><th>Amount</th></tr></thead><tbody></tbody></table></div>
-        </div>
-        <div id="profitshare" class="section">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3>Profit Share Overflow</h3></div>
-            <div class="sum-grid">
-                <div class="sum-card"><div>Jerome Share</div><div id="shareJerome" style="color:var(--primary); font-weight:700;">₱0.00</div></div>
-                <div class="sum-card"><div>Jennifer Share</div><div id="shareJennifer" style="color:var(--success); font-weight:700;">₱0.00</div></div>
+
+            <!-- Sub-tab: Computer -->
+            <div id="sub-tab-computer" class="device-sub-content space-y-4">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <div class="flex items-center space-x-3 flex-wrap gap-2">
+                            <h3 class="font-bold text-slate-800 dark:text-slate-100 text-sm">Computers Directory</h3>
+                            <!-- Toggle Switch Group -->
+                            <div class="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex space-x-1 border border-slate-200 dark:border-slate-700">
+                                <button onclick="setInventoryType('computer', 'all')" id="btn-comp-all" class="px-3 py-1 rounded-lg text-xs font-semibold bg-red-600 text-white transition-all shadow-sm">All</button>
+                                <button onclick="setInventoryType('computer', 'branch')" id="btn-comp-branch" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 transition-all">Branches</button>
+                                <button onclick="setInventoryType('computer', 'hub')" id="btn-comp-hub" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 transition-all">Hubs</button>
+                            </div>
+                            <button onclick="exportTableToCSV('table-computer', 'computer_inventory.csv')" class="bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-400 text-xs px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1"><i class="fa-solid fa-file-csv"></i><span>Export CSV</span></button>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="text" id="search-computer" oninput="filterTableSearch('computer')" placeholder="Search records..." class="text-xs border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 w-full sm:w-60">
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto max-h-[600px]">
+                        <table id="table-computer" class="w-full text-left text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                            <thead class="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 uppercase sticky top-0 z-10 shadow-sm font-semibold">
+                                <tr>
+                                    <th class="p-3.5">TSE Name</th><th class="p-3.5">Business Unit</th><th class="p-3.5">Region</th><th class="p-3.5">Area</th><th class="p-3.5">Branch Code</th><th class="p-3.5">Location Description</th><th class="p-3.5">Asset Tag</th><th class="p-3.5">Serial</th><th class="p-3.5">Model</th><th class="p-3.5">Category</th><th class="p-3.5">Status</th><th class="p-3.5">PTU STATUS</th><th class="p-3.5">Branch TIN Number</th><th class="p-3.5">Machine Type</th><th class="p-3.5">Processor</th><th class="p-3.5">OS Version</th><th class="p-3.5">DEVICE FAMILY</th><th class="p-3.5">Host ID / Device Name</th><th class="p-3.5">OS Ticket #</th><th class="p-3.5">SOTI Enrolled</th><th class="p-3.5">Sophos Enrolled</th><th class="p-3.5">ITAMS Inventory</th><th class="p-3.5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-            <div class="table-container"><table><thead><tr><th>Date</th><th>Account</th><th>Desc</th><th>Overflow</th></tr></thead><tbody id="shareTable"></tbody></table></div>
+
+            <!-- Sub-tab: Face Recognition -->
+            <div id="sub-tab-facerecog" class="device-sub-content hidden space-y-4">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <div class="flex items-center space-x-3 flex-wrap gap-2">
+                            <h3 class="font-bold text-slate-800 dark:text-slate-100 text-sm">Face Recognition Terminals</h3>
+                            <div class="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex space-x-1 border border-slate-200 dark:border-slate-700">
+                                <button onclick="setInventoryType('facerecog', 'all')" id="btn-fr-all" class="px-3 py-1 rounded-lg text-xs font-semibold bg-red-600 text-white transition-all shadow-sm">All</button>
+                                <button onclick="setInventoryType('facerecog', 'branch')" id="btn-fr-branch" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 transition-all">Branches</button>
+                                <button onclick="setInventoryType('facerecog', 'hub')" id="btn-fr-hub" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 transition-all">Hubs</button>
+                            </div>
+                            <button onclick="exportTableToCSV('table-facerecog', 'facerecognition_inventory.csv')" class="bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-400 text-xs px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1"><i class="fa-solid fa-file-csv"></i><span>Export CSV</span></button>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="text" id="search-facerecog" oninput="filterTableSearch('facerecog')" placeholder="Search devices..." class="text-xs border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 w-full sm:w-60">
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table id="table-facerecog" class="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+                            <thead class="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 uppercase font-semibold">
+                                <tr>
+                                    <th class="p-3.5">Branch Code</th>
+                                    <th class="p-3.5">Branch Name</th>
+                                    <th class="p-3.5">IP Address</th>
+                                    <th class="p-3.5">Subnet Mask</th>
+                                    <th class="p-3.5">Default Gateway</th>
+                                    <th class="p-3.5">Serial Number</th>
+                                    <th class="p-3.5">MAC Address</th>
+                                    <th class="p-3.5">Username</th>
+                                    <th class="p-3.5">Password</th>
+                                    <th class="p-3.5">Status</th>
+                                    <th class="p-3.5">Remarks</th>
+                                    <th class="p-3.5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub-tab: Mikrotik -->
+            <div id="sub-tab-mikrotik" class="device-sub-content hidden space-y-4">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <div class="flex items-center space-x-3 flex-wrap gap-2">
+                            <h3 class="font-bold text-slate-800 dark:text-slate-100 text-sm">Mikrotik Router Network</h3>
+                            <div class="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex space-x-1 border border-slate-200 dark:border-slate-700">
+                                <button onclick="setInventoryType('mikrotik', 'all')" id="btn-mikrotik-all" class="px-3 py-1 rounded-lg text-xs font-semibold bg-red-600 text-white transition-all shadow-sm">All</button>
+                                <button onclick="setInventoryType('mikrotik', 'branch')" id="btn-mikrotik-branch" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 transition-all">Branches</button>
+                                <button onclick="setInventoryType('mikrotik', 'hub')" id="btn-mikrotik-hub" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 transition-all">Hubs</button>
+                            </div>
+                            <button onclick="exportTableToCSV('table-mikrotik', 'mikrotik_inventory.csv')" class="bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-400 text-xs px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1"><i class="fa-solid fa-file-csv"></i><span>Export CSV</span></button>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="text" id="search-mikrotik" oninput="filterTableSearch('mikrotik')" placeholder="Search routers..." class="text-xs border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 w-full sm:w-60">
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table id="table-mikrotik" class="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+                            <thead class="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 uppercase font-semibold">
+                                <tr><th class="p-3.5">Branch Code</th><th class="p-3.5">Branch Name</th><th class="p-3.5">IP Address</th><th class="p-3.5">Firmware Version</th><th class="p-3.5">Username</th><th class="p-3.5">Password</th><th class="p-3.5">Status</th><th class="p-3.5">Remarks</th><th class="p-3.5 text-right">Actions</th></tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div id="business-notes" class="section">
-            <div id="notesContainer"></div>
+
+        <!-- ================= BRANCH TAB ================= -->
+        <div id="tab-branch" class="tab-content hidden space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100">Branch Management</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Overview of active branch locations, team heads, and direct ISP connections.</p>
+                </div>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+                    <div class="relative flex-1 sm:flex-initial">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400"><i class="fa-solid fa-search text-xs"></i></span>
+                        <input type="text" id="search-branch" oninput="filterCards('branch')" placeholder="Search branches..." class="text-xs border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 w-full sm:w-60 shadow-sm font-medium">
+                    </div>
+                    <button onclick="openModal('branch', 'add')" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all shadow-md shadow-red-600/20 whitespace-nowrap flex items-center justify-center space-x-1.5">
+                        <i class="fa-solid fa-plus"></i><span>Add Branch</span>
+                    </button>
+                </div>
+            </div>
+            <div id="branch-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </div>
+
+        <!-- ================= DELIVERY HUB TAB ================= -->
+        <div id="tab-hub" class="tab-content hidden space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100">Delivery Hub Management</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Overview of central sorting facilities, team heads, and direct ISP connections.</p>
+                </div>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+                    <div class="relative flex-1 sm:flex-initial">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400"><i class="fa-solid fa-search text-xs"></i></span>
+                        <input type="text" id="search-hub" oninput="filterCards('hub')" placeholder="Search hubs..." class="text-xs border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 w-full sm:w-60 shadow-sm font-medium">
+                    </div>
+                    <button onclick="openModal('hub', 'add')" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all shadow-md shadow-red-600/20 whitespace-nowrap flex items-center justify-center space-x-1.5">
+                        <i class="fa-solid fa-plus"></i><span>Add Delivery Hub</span>
+                    </button>
+                </div>
+            </div>
+            <div id="hub-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </div>
+
+        <!-- ================= CCTV TAB ================= -->
+        <div id="tab-cctv" class="tab-content hidden space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100">CCTV Systems Inventory</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Monitor surveillance streams, storage capacities, and security credentials.</p>
+                </div>
+                <button onclick="openModal('cctv', 'add')" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all shadow-md shadow-red-600/20 flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-plus"></i><span>Add CCTV Unit</span>
+                </button>
+            </div>
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div class="flex items-center space-x-3 flex-wrap gap-2">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-100 text-sm">Surveillance Network</h3>
+                        <div class="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex space-x-1 border border-slate-200 dark:border-slate-700">
+                            <button onclick="setInventoryType('cctv', 'all')" id="btn-cctv-all" class="px-3 py-1 rounded-lg text-xs font-semibold bg-red-600 text-white transition-all shadow-sm">All</button>
+                            <button onclick="setInventoryType('cctv', 'branch')" id="btn-cctv-branch" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 transition-all">Branches</button>
+                            <button onclick="setInventoryType('cctv', 'hub')" id="btn-cctv-hub" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 transition-all">Hubs</button>
+                        </div>
+                        <button onclick="exportTableToCSV('table-cctv', 'cctv_inventory.csv')" class="bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-400 text-xs px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1"><i class="fa-solid fa-file-csv"></i><span>Export CSV</span></button>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="text" id="search-cctv" oninput="filterTableSearch('cctv')" placeholder="Search branch code or IP..." class="text-xs border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 w-full sm:w-60">
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="table-cctv" class="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+                        <thead class="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 uppercase font-semibold">
+                            <tr><th class="p-3.5">Branch Code</th><th class="p-3.5">Branch Name</th><th class="p-3.5">IP Address</th><th class="p-3.5">Cameras</th><th class="p-3.5">Storage</th><th class="p-3.5">Username</th><th class="p-3.5">Password</th><th class="p-3.5">Status</th><th class="p-3.5">Remarks</th><th class="p-3.5 text-right">Actions</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Floating Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- Redesigned Modern, Compact Modal -->
+    <div id="assetModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 transition-all">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-scale border border-slate-100 dark:border-slate-800">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <h3 id="modalTitle" class="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-wide uppercase">Record Form</h3>
+                <button onclick="closeModal()" class="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center transition-colors text-xs"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="modalBody" class="space-y-3 max-h-[60vh] overflow-y-auto pr-1"></div>
+            <div class="flex justify-end space-x-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button onclick="closeModal()" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors">Cancel</button>
+                <button onclick="saveRecord()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-all shadow-md shadow-red-600/20">Save Record</button>
+            </div>
         </div>
     </div>
-</div>
 
-<div id="addModal" class="modal-overlay">
-    <div class="modal-content">
-        <h3 id="modalTitle">Entry</h3>
-        <div id="standardFields">
-            <div class="form-group"><label class="form-label">Date</label><input type="date" id="modalDate"></div>
-            <div class="form-group" id="modalContributorBox" style="display:none;"><label class="form-label">Partner</label><select id="modalContributor"><option value="Jerome">Jerome</option><option value="Jennifer">Jennifer</option></select></div>
-            <div class="form-group" id="modalCatBox" style="display:none;"><label class="form-label">Category</label><select id="modalCat"><option>FOOD</option><option>OFFICE</option><option>INTERNET</option><option>WATER</option><option>ELECTRICITY</option><option>ALLOWANCE</option><option>GROCERY</option><option>MISCELLANEOUS</option></select></div>
-            <div class="form-group" id="modalAccountBox" style="display:none;"><label class="form-label">Harvest Account</label><select id="modalAccountSelect"></select></div>
-            <div class="form-group" id="modalDescBox"><label class="form-label">Description</label><input type="text" id="modalDesc" placeholder="What is this for?"></div>
-            <div class="form-group"><label class="form-label">Amount (PHP)</label><input type="number" id="modalAmount" placeholder="0.00"></div>
+    <!-- Duplicate IP Alert Modal -->
+    <div id="duplicateIpModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 transition-all">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4 animate-scale border border-amber-200 dark:border-amber-900/50">
+            <div class="w-14 h-14 bg-amber-50 dark:bg-amber-950/50 text-amber-500 rounded-2xl flex items-center justify-center text-2xl mx-auto shadow-inner border border-amber-200/50 dark:border-amber-800/50">
+                <i class="fa-solid fa-network-wired"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-bold text-slate-800 dark:text-slate-100">IP Address Conflict</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                    The IP address <span id="duplicateIpText" class="font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">0.0.0.0</span> already exists in this database collection!
+                </p>
+                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-2">Please provide a unique IP address to continue.</p>
+            </div>
+            <button onclick="closeDuplicateIpModal()" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-all shadow-md shadow-amber-500/20">Got it</button>
         </div>
-        <div id="noteFields" style="display:none;"><div class="form-group"><label class="form-label">Note Content</label><textarea id="modalNoteBody" rows="8"></textarea></div></div>
-        <div class="btn-group"><button onclick="closeModal('addModal')" class="btn-cancel">Cancel</button><button onclick="processAdd()" class="btn-save">Confirm</button></div>
     </div>
-</div>
 
-<div id="pinModal" class="modal-overlay">
-    <div class="modal-content">
-        <h3>Change Security PIN</h3>
-        <div class="form-group"><label class="form-label">Current PIN</label><input type="password" id="curPin" maxlength="4"></div>
-        <div class="form-group"><label class="form-label">New 4-Digit PIN</label><input type="password" id="newPin" maxlength="4"></div>
-        <div class="btn-group"><button onclick="closeModal('pinModal')" class="btn-cancel">Cancel</button><button onclick="executeChangePin()" class="btn-save">Update PIN</button></div>
+    <!-- Import Success Modal Popup -->
+    <div id="importSuccessModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 transition-all">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4 animate-scale border border-emerald-200 dark:border-emerald-900/50">
+            <div class="w-14 h-14 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-500 rounded-2xl flex items-center justify-center text-2xl mx-auto shadow-inner border border-emerald-200/50 dark:border-emerald-800/50">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-bold text-slate-800 dark:text-slate-100">Backup Restored Successfully</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                    Imported <span id="importCountText" class="font-bold text-emerald-600 dark:text-emerald-400">0</span> records across database collections. All data is synchronized and saved permanently.
+                </p>
+            </div>
+            <button onclick="closeImportSuccessModal()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-all shadow-md shadow-emerald-600/20">Done</button>
+        </div>
     </div>
-</div>
 
-<div id="deleteConfirmModal" class="confirm-overlay">
-    <div class="modal-content" style="text-align:center;"><h3 style="color:var(--danger);">Delete Entry?</h3><p style="font-size:14px; color:#888;">This action cannot be undone.</p><div class="btn-group"><button onclick="closeConfirm()" class="btn-cancel">Cancel</button><button id="confirmBtn" class="btn-save" style="background:var(--danger);">Delete</button></div></div>
-</div>
-
-<div id="logoutConfirmModal" class="confirm-overlay">
-    <div class="modal-content" style="text-align:center;"><h3 style="color:var(--danger);">Logout?</h3><p style="font-size:14px; color:#888;">Are you sure you want to exit?</p><div class="btn-group"><button onclick="closeModal('logoutConfirmModal')" class="btn-cancel">Cancel</button><button onclick="logout()" class="btn-save" style="background:var(--danger);">Logout</button></div></div>
-</div>
-
-<div id="resetModal" class="confirm-overlay">
-    <div class="modal-content" style="text-align:center;"><h3 style="color:var(--danger);">Wipe System Data?</h3><p style="font-size:14px; color:#888;">All history will be erased.</p><div class="btn-group"><button onclick="closeModal('resetModal')" class="btn-cancel">Cancel</button><button onclick="executeFullReset()" class="btn-save" style="background:var(--danger);">Wipe All</button></div></div>
-</div>
-
-<div id="calcContainer">
-    <div class="calc-header" id="calcHeader"><span onclick="minimizeCalc()" style="cursor:pointer; font-size: 16px;">−</span><span>Business Calc</span><span onclick="toggleCalc()" style="cursor:pointer; font-size: 16px;">×</span></div>
-    <div class="calc-display" id="calcDisp">0</div>
-    <div class="calc-grid">
-        <button onclick="calcClear()">C</button><button onclick="calcOp('/')" class="op">÷</button><button onclick="calcOp('*')" class="op">×</button><button onclick="calcDel()">⌫</button>
-        <button onclick="calcNum('7')">7</button><button onclick="calcNum('8')">8</button><button onclick="calcNum('9')">9</button><button onclick="calcOp('-')" class="op">-</button>
-        <button onclick="calcNum('4')">4</button><button onclick="calcNum('5')">5</button><button onclick="calcNum('6')">6</button><button onclick="calcOp('+')" class="op">+</button>
-        <button onclick="calcNum('1')">1</button><button onclick="calcNum('2')">2</button><button onclick="calcNum('3')">3</button><button onclick="calcRes()" class="eq" style="grid-row: span 2;">=</button>
-        <button onclick="calcNum('0')" style="grid-column: span 2;">0</button><button onclick="calcNum('.')">.</button>
+    <!-- Custom Warning Modal -->
+    <div id="warningModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 transition-all">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl text-center space-y-4 animate-scale border border-slate-100 dark:border-slate-800">
+            <div class="w-14 h-14 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 rounded-2xl flex items-center justify-center text-2xl mx-auto shadow-inner"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div>
+                <h3 id="warningTitle" class="text-base font-bold text-slate-800 dark:text-slate-100">Confirm Deletion</h3>
+                <p id="warningText" class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Are you sure you want to delete this record?</p>
+            </div>
+            <div class="flex space-x-3 pt-2">
+                <button onclick="closeWarningModal()" class="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors">Cancel</button>
+                <button id="warningConfirmBtn" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-all shadow-md shadow-rose-600/20">Proceed</button>
+            </div>
+        </div>
     </div>
-</div>
 
-<script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxHKIEGfJHIb3R4z25q7Yn9Sds5-WsCh8De8ehDh25PR7JPWDSfkKfRHKQ1Na6rTJteqQ/exec";
-const DEFAULT_PIN_HASH = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4";
+    <!-- Footer -->
+    <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-4 text-center text-xs text-slate-400 mt-auto transition-colors duration-200">
+        &copy; 2026 Asset Inventory Management System - Jerome. Cloud Enabled.
+    </footer>
 
-async function hashPin(pin) {
-    const msgUint8 = new TextEncoder().encode(pin);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
+    <!-- App Logic Script -->
+    <script>
+        let currentDeviceSubTab = 'computer';
+        let currentModalType = '';
+        let currentModalMode = 'add';
+        let editingRecordId = null;
+        let pendingAction = null;
+        
+        // Toggle filters state
+        const inventoryFilters = {
+            computer: 'all',
+            facerecog: 'all',
+            mikrotik: 'all',
+            cctv: 'all'
+        };
 
-async function checkLogin() { 
-    const btn = document.getElementById('loginBtn');
-    const spinner = document.getElementById('loginSpinner');
-    const text = document.getElementById('loginText');
-    const inputPin = document.getElementById("passInput").value;
-    
-    btn.disabled = true;
-    spinner.style.display = 'inline-block';
-    text.innerText = 'Authenticating...';
+        window.dbCollections = {
+            computers: {},
+            faceRecognition: {},
+            mikrotik: {},
+            branches: {},
+            hubs: {},
+            cctv: {}
+        };
 
-    let cloudHash = DEFAULT_PIN_HASH;
-    try {
-        const res = await fetch(SCRIPT_URL);
-        const data = await res.json();
-        if(data.pinHash) { cloudHash = data.pinHash; localStorage.setItem("dashPinHash", cloudHash); }
-    } catch(e) { cloudHash = localStorage.getItem("dashPinHash") || DEFAULT_PIN_HASH; }
-
-    const inputHash = await hashPin(inputPin);
-    setTimeout(() => {
-        if(inputHash === cloudHash) { 
-            sessionStorage.setItem("isLoggedIn", "true"); 
-            sessionStorage.setItem("lastActivity", Date.now());
-            localStorage.setItem("activeTab", "overview"); 
-            location.reload(); 
-        } else { 
-            btn.disabled = false; spinner.style.display = 'none'; text.innerText = 'Unlock Dashboard';
-            showToast("Invalid Key", true);
-            const card = document.querySelector('.login-card');
-            card.style.animation = 'none'; void card.offsetWidth; card.style.animation = 'shake 0.4s';
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                html.classList.add('light');
+                localStorage.setItem('jerome_theme', 'light');
+                icon.className = 'fa-solid fa-moon text-amber-400 text-xs sm:text-sm';
+            } else {
+                html.classList.remove('light');
+                html.classList.add('dark');
+                localStorage.setItem('jerome_theme', 'dark');
+                icon.className = 'fa-solid fa-sun text-amber-300 text-xs sm:text-sm';
+            }
         }
-    }, 800); 
-}
 
-let incomes=[], expenses=[], unbudgeted=[], liabilities=[], harvests=[], harvestTransactions=[], contributions=[], businessNotes=[], pinHash = DEFAULT_PIN_HASH;
-let myChart, myTrendChart, currentAddType = '', editId = null, deleteTgt={};
-const fullMonths=["January","February","March","April","May","June","July","August","September","October","November","December"];
-let showAllHarvests = false; 
+        function switchTab(tabId, saveState = true) {
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.add('hidden');
+                el.classList.remove('animate-fade');
+            });
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('border-red-600', 'text-red-600');
+                el.classList.add('border-transparent', 'text-slate-500');
+            });
 
-document.getElementById('passInput').addEventListener('keypress', function(e) { if(e.key === 'Enter') checkLogin(); });
+            const activeTab = document.getElementById('tab-' + tabId);
+            if(activeTab) {
+                activeTab.classList.remove('hidden');
+                activeTab.classList.add('animate-fade');
+            }
 
-async function load() {
-    const isLogged = sessionStorage.getItem("isLoggedIn") === "true";
-    if(isLogged) { 
-        document.getElementById("loginOverlay").style.display="none"; 
-        document.getElementById("mainApp").style.display="none"; 
-        document.getElementById("mainAppLoader").style.display="flex"; 
-    } else {
-        return; 
-    }
+            const activeBtn = document.getElementById('nav-' + tabId);
+            if(activeBtn) {
+                activeBtn.classList.add('border-red-600', 'text-red-600');
+                activeBtn.classList.remove('border-transparent', 'text-slate-500');
+            }
 
-    const currentTheme = localStorage.getItem("theme") || "light";
-    applyTheme(currentTheme);
-    document.getElementById('themeToggle').checked = (currentTheme === "dark");
+            if (saveState) {
+                localStorage.setItem('jerome_active_tab', tabId);
+            }
 
-    try {
-        const res = await fetch(SCRIPT_URL);
-        const data = await res.json();
-        if (data.incomes) {
-            incomes = data.incomes; expenses = data.expenses; unbudgeted = data.unbudgeted;
-            liabilities = data.liabilities; harvests = data.harvests; 
-            harvestTransactions = data.harvestTransactions; contributions = data.contributions;
-            businessNotes = data.businessNotes;
-            if(data.pinHash) { pinHash = data.pinHash; localStorage.setItem("dashPinHash", pinHash); }
+            if(tabId === 'dashboard') updateDashboardStats();
+            if(tabId === 'branch') loadCardsIntoGrid('branches', 'branch-cards-grid', renderBranchCard);
+            if(tabId === 'hub') loadCardsIntoGrid('hubs', 'hub-cards-grid', renderHubCard);
         }
-    } catch (e) { console.log("Cloud load failed."); }
-    
-    monthSel.value = "all";
-    switchSection(localStorage.getItem("activeTab") || "overview");
-    
-    setTimeout(() => {
-        document.getElementById("mainAppLoader").style.opacity = "0";
-        setTimeout(() => {
-            document.getElementById("mainAppLoader").style.display = "none";
-            document.getElementById("mainApp").style.display = "block";
-        }, 400);
-    }, 500);
-}
 
-async function save() {
-    const data = { incomes, expenses, unbudgeted, liabilities, harvests, harvestTransactions, contributions, businessNotes, pinHash };
-    try {
-        await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(data), mode: 'no-cors' });
-        render();
-        showToast("Cloud Synced");
-    } catch (e) { showToast("Sync Failed", true); }
-}
+        function switchDeviceSubTab(subId, saveState = true) {
+            currentDeviceSubTab = subId;
+            document.querySelectorAll('.device-sub-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.device-sub-btn').forEach(el => {
+                el.classList.remove('bg-red-600', 'text-white', 'shadow-sm');
+                el.classList.add('bg-white', 'dark:bg-slate-900', 'text-slate-600', 'dark:text-slate-300', 'border', 'border-slate-200', 'dark:border-slate-800');
+            });
 
-function switchSection(id, el){
-    const genTabs = ['overview', 'income', 'budget', 'unbudget', 'liability', 'savings'], bizTabs = ['business-hub', 'contribution', 'profitshare', 'harvest', 'business-notes'];
-    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active')); 
-    const target = document.getElementById(id); if(target) target.classList.add('active');
-    if(genTabs.includes(id)) {
-        document.getElementById('subNavGeneral').style.display = 'flex';
-        document.getElementById('subNavBusiness').style.display = 'none';
-        document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('selected'));
-        document.getElementById('nav-overview').classList.add('selected');
-    } else if(bizTabs.includes(id)) {
-        document.getElementById('subNavGeneral').style.display = 'none';
-        document.getElementById('subNavBusiness').style.display = 'flex';
-        document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('selected'));
-        document.getElementById('nav-business-hub').classList.add('selected');
-    }
-    document.querySelectorAll('.sub-nav-link').forEach(l => l.classList.remove('active'));
-    const link = document.getElementById('link-' + id); if(link) link.classList.add('active');
-    if(el && window.innerWidth<768) toggleSidebar(); 
-    localStorage.setItem("activeTab", id); render();
-}
+            const subTabEl = document.getElementById('sub-tab-' + subId);
+            if(subTabEl) subTabEl.classList.remove('hidden');
 
-function formatAmount(v){ return (v < 0 ? "-₱" : "₱") + Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:2}); }
-function showToast(m, isError = false) { const t = document.getElementById("toast"); t.innerText = m; t.classList.remove("error", "show"); void t.offsetWidth; if(isError) t.classList.add("error"); t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2500); }
-function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('active'); }
-function closeModal(id){ document.getElementById(id).style.display="none"; editId = null; }
-function closeConfirm(){ document.getElementById('deleteConfirmModal').style.display='none'; }
-function triggerLogout() { document.getElementById('logoutConfirmModal').style.display = 'flex'; }
-function logout() { sessionStorage.removeItem("isLoggedIn"); sessionStorage.removeItem("lastActivity"); location.reload(); }
-function applyTheme(t) { document.body.setAttribute("data-theme", t); localStorage.setItem("theme", t); }
-function toggleTheme(){ const newTheme = document.getElementById('themeToggle').checked ? "dark" : "light"; applyTheme(newTheme); render(); }
+            const activeBtn = document.getElementById('sub-nav-' + subId);
+            if(activeBtn) {
+                activeBtn.classList.add('bg-red-600', 'text-white', 'shadow-sm');
+                activeBtn.classList.remove('bg-white', 'dark:bg-slate-900', 'text-slate-600', 'dark:text-slate-300', 'border', 'border-slate-200', 'dark:border-slate-800');
+            }
 
-const monthSel=document.getElementById("month"), yearSel=document.getElementById("year");
-fullMonths.forEach((m, i) => monthSel.innerHTML+=`<option value="${i}">${m}</option>`);
-monthSel.innerHTML += `<option value="all">All Months</option>`;
-for(let y=2024; y<=2035; y++) yearSel.innerHTML+=`<option>${y}</option>`;
-yearSel.value=new Date().getFullYear();
-monthSel.onchange=render; yearSel.onchange=render;
+            if (saveState) {
+                localStorage.setItem('jerome_active_subtab', subId);
+            }
 
-function filterData(data){ return data.filter(d=>{ let dt=new Date(d.date), mMatch = monthSel.value === "all" || dt.getMonth() == monthSel.value, yMatch = dt.getFullYear() == yearSel.value; return mMatch && yMatch; }); }
-
-function render(){
-    const fInc=filterData(incomes).sort((a,b) => new Date(b.date) - new Date(a.date));
-    const fExp=filterData(expenses).sort((a,b) => new Date(b.date) - new Date(a.date));
-    const fUn=filterData(unbudgeted).sort((a,b) => new Date(b.date) - new Date(a.date));
-    const fLia=filterData(liabilities).sort((a,b) => new Date(b.date) - new Date(a.date));
-    const inc = fInc.reduce((a,b)=>a+b.amount,0), bud = fExp.reduce((a,b)=>a+b.amount,0), unb = fUn.reduce((a,b)=>a+b.amount,0), lia = fLia.reduce((a,b)=>a+b.amount,0), rem = inc-(bud+unb+lia);
-    
-    // Calculate and display new card
-    const totalSpentOverall = bud + unb;
-    document.getElementById("totalSpentOverall").innerText = formatAmount(totalSpentOverall);
-
-    document.getElementById("totalIncome").innerText=formatAmount(inc); document.getElementById("totalBudgeted").innerText=formatAmount(bud); document.getElementById("totalUnbudgeted").innerText=formatAmount(unb); document.getElementById("totalLiability").innerText=formatAmount(lia); document.getElementById("totalSavings").innerText=formatAmount(rem);
-    document.getElementById("tabTotalIncomeDisplay").innerText = formatAmount(inc); document.getElementById("tabTotalBudgetedDisplay").innerText = formatAmount(bud); document.getElementById("tabTotalUnbudgetedDisplay").innerText = formatAmount(unb); document.getElementById("tabTotalLiabilityDisplay").innerText = formatAmount(lia);
-    
-    const cats = ["FOOD", "OFFICE", "INTERNET", "WATER", "ELECTRICITY", "ALLOWANCE", "GROCERY", "MISCELLANEOUS"];
-    let catHtml = ""; cats.forEach(c => { let total = fExp.filter(e => e.cat === c).reduce((a,b) => a + b.amount, 0); catHtml += `<div class="cat-chip"><label>${c}</label><span>${formatAmount(total)}</span></div>`; });
-    document.getElementById("budgetCategoryBreakdown").innerHTML = catHtml;
-    
-    let totalRevenue = harvests.reduce((a, b) => a + b.amount, 0), totalExpenses = harvestTransactions.reduce((a, b) => a + b.amount, 0), netProfit = totalRevenue - totalExpenses;
-    document.getElementById("totalBizProfit").innerText = formatAmount(netProfit); document.getElementById("hubBizRev").innerText = formatAmount(totalRevenue); document.getElementById("hubBizNet").innerText = formatAmount(netProfit); document.getElementById("hubLifetimeBal").innerText = formatAmount(netProfit); document.getElementById("harvTotalRev").innerText = formatAmount(totalRevenue); document.getElementById("harvTotalExp").innerText = formatAmount(totalExpenses); document.getElementById("harvTotalNet").innerText = formatAmount(netProfit);
-    document.getElementById("topHarvestsList").innerHTML = harvests.slice().sort((a,b)=>b.amount-a.amount).slice(0,3).map(h => `<div style="display:flex; justify-content:space-between;"><span>${h.desc}</span><b>${formatAmount(h.amount)}</b></div>`).join('') || "No active accounts.";
-    
-    let jConTotal = contributions.filter(c => c.contributor === 'Jerome').reduce((a,b) => a + b.amount, 0), nConTotal = contributions.filter(c => c.contributor === 'Jennifer').reduce((a,b) => a + b.amount, 0);
-    let jSpent = 0, nSpent = 0, historyRows = [], jShare = 0, nShare = 0, shareHtml = "";
-    harvestTransactions.forEach((t) => {
-        let isJ = t.desc.toLowerCase().includes('jerome'), isN = t.desc.toLowerCase().includes('jennifer'), acc = harvests.find(h => h.id === t.harvestId);
-        if(isJ) { let bal = jConTotal - jSpent, ded = Math.min(t.amount, bal), over = t.amount - ded; jSpent += ded; if(ded > 0) historyRows.push({ date: t.date, who: 'Jerome', details: `${acc?.desc || 'Acc'}: ${t.desc}`, amt: ded }); if(over > 0) { jShare += over; shareHtml += `<tr><td>${t.date}</td><td>${acc?.desc || 'Acc'}</td><td>${t.desc}</td><td style="color:var(--danger)">${formatAmount(over)}</td></tr>`; } }
-        if(isN) { let bal = nConTotal - nSpent, ded = Math.min(t.amount, bal), over = t.amount - ded; nSpent += ded; if(ded > 0) historyRows.push({ date: t.date, who: 'Jennifer', details: `${acc?.desc || 'Acc'}: ${t.desc}`, amt: ded }); if(over > 0) { nShare += over; shareHtml += `<tr><td>${t.date}</td><td>${acc?.desc || 'Acc'}</td><td>${t.desc}</td><td style="color:var(--danger)">${formatAmount(over)}</td></tr>`; } }
-    });
-    
-    document.getElementById("sumJerome").innerText = formatAmount(jConTotal - jSpent); document.getElementById("sumJennifer").innerText = formatAmount(nConTotal - nSpent); document.getElementById("sumCombined").innerText = formatAmount((jConTotal - jSpent) + (nConTotal - nSpent)); document.getElementById("shareJerome").innerText = formatAmount(jShare); document.getElementById("shareJennifer").innerText = formatAmount(nShare); document.getElementById("shareTable").innerHTML = shareHtml || '<tr><td colspan="4" style="text-align:center">No overflow.</td></tr>';
-    document.getElementById("conTable").innerHTML = contributions.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map((c) => `<tr><td>${c.date}</td><td>${c.contributor}</td><td>${c.desc}</td><td>${formatAmount(c.amount)}</td><td><button class="action-edit" onclick="openAddModal('contribution',${contributions.indexOf(c)})">Edit</button><button class="action-delete" onclick="deleteItem('con',${contributions.indexOf(c)})">Delete</button></td></tr>`).join('');
-    document.getElementById("conHistoryTable").querySelector('tbody').innerHTML = historyRows.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(r => `<tr><td>${r.date}</td><td>${r.who}</td><td>${r.details}</td><td>-${formatAmount(r.amt)}</td></tr>`).join('');
-    
-    const mapper = (type, label) => (d) => `<tr><td>${d.date}</td><td>${d.desc || d.cat}</td><td>${formatAmount(d.amount)}</td><td><button class="action-edit" onclick="openAddModal('${type}',${(type==='income'?incomes:type==='budget'?expenses:type==='unbudget'?unbudgeted:liabilities).indexOf(d)})">Edit</button><button class="action-delete" onclick="deleteItem('${label}',${(type==='income'?incomes:type==='budget'?expenses:type==='unbudget'?unbudgeted:liabilities).indexOf(d)})">Delete</button></td></tr>`;
-    document.getElementById("incomeTable").innerHTML=fInc.map(mapper('income', 'income')).join(''); document.getElementById("expenseTable").innerHTML=fExp.map(mapper('budget', 'exp')).join(''); document.getElementById("unTable").innerHTML=fUn.map(mapper('unbudget', 'un')).join(''); document.getElementById("liaTable").innerHTML=fLia.map(mapper('liability', 'lia')).join('');
-    
-    updateCharts(bud, unb, lia, rem); renderHarvests(harvests); renderNotes(); updateSavingsTab();
-}
-
-function openAddModal(type, existingId = null) {
-    if (type === 'harvest_expense' && harvests.length === 0) { showToast("Create Harvest Account first!", true); return; }
-    currentAddType = type; editId = existingId;
-    document.getElementById('modalTitle').innerText = (existingId !== null ? 'Edit ' : 'Add ') + type.replace('-', ' ');
-    document.getElementById('modalCatBox').style.display = type==='budget'?'block':'none';
-    document.getElementById('modalAccountBox').style.display = type==='harvest_expense'?'block':'none';
-    document.getElementById('modalContributorBox').style.display = type==='contribution'?'block':'none';
-    document.getElementById('modalDescBox').style.display = (type==='budget' || type==='note')?'none':'block';
-    if(type === 'harvest_expense') { document.getElementById('modalAccountSelect').innerHTML = harvests.map(h => `<option value="${h.id}">${h.desc}</option>`).join(''); }
-    if(type === 'note') {
-        document.getElementById('standardFields').style.display = 'none'; document.getElementById('noteFields').style.display = 'block';
-        if(existingId !== null) { document.getElementById('modalNoteBody').value = businessNotes.find(n => n.id === existingId).text; } else { document.getElementById('modalNoteBody').value = ''; }
-    } else {
-        document.getElementById('standardFields').style.display = 'block'; document.getElementById('noteFields').style.display = 'none';
-        if(existingId !== null) {
-            let dataArr = type==='income'?incomes:type==='budget'?expenses:type==='unbudget'?unbudgeted:type==='liability'?liabilities:type==='contribution'?contributions:type==='harvest'?harvests:harvestTransactions;
-            const entry = dataArr[existingId]; document.getElementById('modalDate').value = entry.date; document.getElementById('modalDesc').value = entry.desc || ''; document.getElementById('modalAmount').value = entry.amount;
-            if(type === 'budget') document.getElementById('modalCat').value = entry.cat; if(type === 'contribution') document.getElementById('modalContributor').value = entry.contributor; if(type === 'harvest_expense') document.getElementById('modalAccountSelect').value = entry.harvestId;
-        } else { document.getElementById('modalDate').value = new Date().toISOString().split('T')[0]; document.getElementById('modalDesc').value = ''; document.getElementById('modalAmount').value = ''; }
-    }
-    document.getElementById('addModal').style.display = 'flex';
-}
-
-function processAdd() {
-    if(currentAddType === 'note') {
-        const body = document.getElementById('modalNoteBody').value; if(!body.trim()) return;
-        if(editId !== null) { let idx = businessNotes.findIndex(n => n.id === editId); businessNotes[idx].text = body; businessNotes[idx].date = "Edited: " + new Date().toLocaleString(); } else { businessNotes.push({ id: Date.now(), date: new Date().toLocaleString(), text: body, pinned: false }); }
-    } else {
-        const date = document.getElementById('modalDate').value, desc = document.getElementById('modalDesc').value, amt = Number(document.getElementById('modalAmount').value);
-        if(!date || !amt) return;
-        let targetArr = currentAddType==='income'?incomes:currentAddType==='budget'?expenses:currentAddType==='unbudget'?unbudgeted:currentAddType==='liability'?liabilities:currentAddType==='contribution'?contributions:currentAddType==='harvest'?harvests:harvestTransactions;
-        if(editId !== null) {
-            let existing = targetArr[editId]; existing.date = date; existing.desc = desc; existing.amount = amt;
-            if(currentAddType === 'budget') existing.cat = document.getElementById('modalCat').value; if(currentAddType === 'contribution') existing.contributor = document.getElementById('modalContributor').value; if(currentAddType === 'harvest_expense') document.getElementById('modalAccountSelect').value = entry.harvestId;
-        } else {
-            let newData = { date, desc, amount: amt };
-            if(currentAddType === 'budget') newData.cat = document.getElementById('modalCat').value; if(currentAddType === 'contribution') newData.contributor = document.getElementById('modalContributor').value; if(currentAddType === 'harvest_expense') newData.harvestId = document.getElementById('modalAccountSelect').value; if(currentAddType === 'harvest') newData.id = Date.now().toString();
-            targetArr.push(newData);
+            const addBtn = document.getElementById('addDeviceBtn');
+            if (addBtn) {
+                if (subId === 'computer') {
+                    addBtn.innerHTML = '<i class="fa-solid fa-plus"></i><span>Add Computer Record</span>';
+                    addBtn.setAttribute('onclick', "openModal('computer', 'add')");
+                } else if (subId === 'facerecog') {
+                    addBtn.innerHTML = '<i class="fa-solid fa-plus"></i><span>Add Face Recognition Device</span>';
+                    addBtn.setAttribute('onclick', "openModal('facerecog', 'add')");
+                } else if (subId === 'mikrotik') {
+                    addBtn.innerHTML = '<i class="fa-solid fa-plus"></i><span>Add Mikrotik Router</span>';
+                    addBtn.setAttribute('onclick', "openModal('mikrotik', 'add')");
+                }
+            }
         }
-    }
-    save(); closeModal('addModal');
-}
 
-function deleteItem(type, i) { deleteTgt = { type, idx: i }; document.getElementById('deleteConfirmModal').style.display = 'flex'; }
-document.getElementById('confirmBtn').onclick = () => {
-    const map = { income: incomes, exp: expenses, un: unbudgeted, lia: liabilities, con: contributions, note: businessNotes, har_acc: harvests, har_trans: harvestTransactions };
-    map[deleteTgt.type].splice(deleteTgt.idx, 1); closeConfirm(); save(); 
-};
+        function setInventoryType(tabKey, type) {
+            inventoryFilters[tabKey] = type;
+            
+            ['all', 'branch', 'hub'].forEach(t => {
+                let btnId = '';
+                if (tabKey === 'facerecog') btnId = `btn-fr-${t}`;
+                else if (tabKey === 'cctv') btnId = `btn-cctv-${t}`;
+                else if (tabKey === 'mikrotik') btnId = `btn-mikrotik-${t}`;
+                else btnId = `btn-comp-${t}`;
 
-function triggerFullReset() { document.getElementById('resetModal').style.display = 'flex'; }
-async function executeFullReset() { 
-    const empty = { incomes:[], expenses:[], unbudgeted:[], liabilities:[], harvests:[], harvestTransactions:[], contributions:[], businessNotes:[], pinHash: DEFAULT_PIN_HASH };
-    await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(empty) });
-    localStorage.clear(); sessionStorage.clear(); location.reload(); 
-}
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    if (t === type) {
+                        btn.className = "px-3 py-1 rounded-lg text-xs font-semibold bg-red-600 text-white transition-all shadow-sm";
+                    } else {
+                        btn.className = "px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all";
+                    }
+                }
+            });
 
-function exportData() {
-    const data = { incomes, expenses, unbudgeted, liabilities, harvests, harvestTransactions, contributions, businessNotes };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `Backup_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); showToast("Exported JSON");
-}
-
-function importData(event) {
-    const file = event.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const data = JSON.parse(e.target.result);
-            if (data.incomes) { incomes = data.incomes; expenses = data.expenses; unbudgeted = data.unbudgeted; liabilities = data.liabilities; harvests = data.harvests; harvestTransactions = data.harvestTransactions; contributions = data.contributions; businessNotes = data.businessNotes; showToast("Imported Successfully"); save(); }
-        } catch (err) { showToast("Failed to parse file", true); }
-    };
-    reader.readAsText(file);
-}
-
-function toggleHarvestShowAll() { showAllHarvests = document.getElementById('harvestShowAllToggle').checked; render(); }
-
-function updateSavingsTab() {
-    const curY = yearSel.value, mode = document.getElementById("savingsFilter").value;
-    let summary = {}; let grandTotal = 0;
-    [...incomes, ...expenses, ...unbudgeted, ...liabilities].forEach(item => {
-        let d = new Date(item.date), y = d.getFullYear(), m = d.getMonth(), amt = incomes.includes(item) ? item.amount : -item.amount;
-        grandTotal += amt; if (mode === 'monthly' && y == curY) summary[m] = (summary[m]||0) + amt; else if (mode === 'yearly') summary[y] = (summary[y]||0) + amt;
-    });
-    let h = "";
-    if (mode === 'monthly') fullMonths.forEach((m, i) => { if(summary[i] !== undefined) h += `<tr><td>${m} ${curY}</td><td>${formatAmount(summary[i])}</td></tr>`; });
-    else if (mode === 'yearly') Object.keys(summary).sort().forEach(y => { h += `<tr><td>Year ${y}</td><td>${formatAmount(summary[y])}</td></tr>`; });
-    document.getElementById("savingsTable").innerHTML = h || "<tr><td colspan='2' style='text-align:center'>No activity</td></tr>";
-    document.getElementById("grandTotalDisplay").innerText = formatAmount(grandTotal);
-}
-
-function updateCharts(b, u, l, r) {
-    const ctx = document.getElementById('budgetChart').getContext('2d');
-    if (myChart) myChart.destroy();
-    myChart = new Chart(ctx, { type: 'doughnut', data: { labels: ['Budgeted', 'Unbudgeted', 'Debt', 'Saved'], datasets: [{ data: [b, u, l, r > 0 ? r : 0], backgroundColor: ['#2c7be5', '#e17055', '#6c5ce7', '#00cec9'], borderWidth: 0 }] }, options: { maintainAspectRatio: false } });
-    const curYear = yearSel.value;
-    let monthlyIncome = Array(12).fill(0), monthlyExpense = Array(12).fill(0);
-    const proc = (arr, tArr) => arr.forEach(it => { let d = new Date(it.date); if(d.getFullYear()==curYear) tArr[d.getMonth()] += it.amount; });
-    proc(incomes, monthlyIncome); proc(expenses, monthlyExpense); proc(unbudgeted, monthlyExpense); proc(liabilities, monthlyExpense);
-    const ctxTrend = document.getElementById('monthlyTrendChart').getContext('2d');
-    if (myTrendChart) myTrendChart.destroy();
-    myTrendChart = new Chart(ctxTrend, { type: 'bar', data: { labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], datasets: [{ label: 'Income', data: monthlyIncome, backgroundColor: '#00b894' }, { label: 'Expense', data: monthlyExpense, backgroundColor: '#ff4757' }] }, options: { maintainAspectRatio: false } });
-}
-
-function renderHarvests(filteredAccs) {
-    const container = document.getElementById('harvestContainer');
-    const accListToRender = showAllHarvests ? harvests : filteredAccs;
-    if (accListToRender.length === 0) { container.innerHTML = `<p style="text-align:center; color:#888;">No matching records.</p>`; return; }
-    container.innerHTML = accListToRender.map((acc) => {
-        let allTrans = harvestTransactions.filter(t => t.harvestId === acc.id);
-        if(!showAllHarvests) {
-            const curM = monthSel.value, curY = yearSel.value;
-            allTrans = allTrans.filter(t => { let td = new Date(t.date); return (td.getMonth() == curM || curM === "all") && td.getFullYear() == curY; });
+            if (tabKey === 'computer') reloadComputersTable();
+            if (tabKey === 'facerecog') reloadFaceRecogTable();
+            if (tabKey === 'mikrotik') reloadMikrotikTable();
+            if (tabKey === 'cctv') reloadCctvTable();
         }
-        const list = allTrans.sort((a,b) => new Date(b.date) - new Date(a.date)).map(t => {
-            return `<div style="font-size:12px; padding:4px 0; border-bottom:1px dashed #eee; display:flex; justify-content:space-between;"><span>${t.date} - ${t.desc}</span><span style="color:var(--danger)">-${formatAmount(t.amount)} <button class="action-delete" style="text-decoration:none;" onclick="deleteItem('har_trans', ${harvestTransactions.indexOf(t)})">×</button></span></div>`;
-        }).join('');
-        const balance = acc.amount - harvestTransactions.filter(t => t.harvestId === acc.id).reduce((a,b) => a+b.amount, 0);
-        return `<div class="note-card" style="border-left: 4px solid var(--success);"><div style="display:flex; justify-content:space-between;"><div><strong style="color:var(--primary); font-size:16px;">${acc.desc}</strong><br><small>Initial: ${formatAmount(acc.amount)}</small></div><div style="text-align:right;"><small>Running Balance</small><br><strong style="color:${balance < 0 ? 'var(--danger)' : 'var(--success)'}">${formatAmount(balance)}</strong></div></div><div style="margin:10px 0; background:rgba(0,0,0,0.02); padding:10px; border-radius:8px;">${list || '<div style="color:#bbb; font-style:italic; font-size:11px;">No transactions.</div>'}</div><div style="margin-top:10px; display:flex; gap:10px;"><button class="action-edit" onclick="openAddModal('harvest', ${harvests.indexOf(acc)})">Edit</button><button class="action-delete" onclick="deleteItem('har_acc', ${harvests.indexOf(acc)})">Delete</button></div></div>`;
-    }).join('');
-}
 
-function renderNotes() {
-    const container = document.getElementById('notesContainer');
-    let html = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3>Notes</h3><div style="display:flex; gap:10px;"><button class="add-btn" style="background:var(--success)" onclick="toggleCalc()">Calculator</button><button class="add-btn" onclick="openAddModal('note')">+ Add Note</button></div></div>`;
-    if (businessNotes.length === 0) { container.innerHTML = html + `<p style="text-align:center; color:#888;">No notes.</p>`; return; }
-    html += businessNotes.slice().sort((a,b)=>b.id-a.id).map(n => `<div class="note-card"><div><small>${n.date}</small></div><div style="margin-top:5px; white-space: pre-wrap;">${n.text}</div><div style="margin-top:10px;"><button class="action-edit" onclick="openAddModal('note', ${n.id})">Edit</button><button class="action-delete" onclick="deleteItem('note', ${businessNotes.indexOf(n)})">Delete</button></div></div>`).join('');
-    container.innerHTML = html;
-}
+        function isItemHub(branchName, branchCode) {
+            const nameToCheck = branchName || '';
+            if (nameToCheck.toUpperCase().includes('HUB')) {
+                return true;
+            }
+            if (branchCode) {
+                for (const [id, hubData] of Object.entries(window.dbCollections.hubs)) {
+                    if (hubData.branchCode === branchCode || (hubData.branchName && hubData.branchName.toUpperCase().includes('HUB'))) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
 
-function updateActivity() { sessionStorage.setItem("lastActivity", Date.now()); }
-document.addEventListener('click', updateActivity);
-document.addEventListener('keypress', updateActivity);
-function checkTimeout() { const last = sessionStorage.getItem("lastActivity"); if (sessionStorage.getItem("isLoggedIn") === "true" && last && (Date.now() - last > 3600000)) { logout(); } }
-setInterval(checkTimeout, 10000); 
+        function getStatusBadge(status) {
+            const isOffline = (status || '').toLowerCase() === 'offline';
+            if (isOffline) {
+                return `<span class="bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 text-xs px-2 py-0.5 rounded-full font-medium">Offline</span>`;
+            }
+            return `<span class="bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-xs px-2 py-0.5 rounded-full font-medium">Online</span>`;
+        }
 
-function toggleCalc() { const calc = document.getElementById('calcContainer'); calc.style.display = (calc.style.display === 'flex') ? 'none' : 'flex'; }
-function minimizeCalc() { document.getElementById('calcContainer').classList.toggle('minimized'); }
-function calcNum(n) { calcExpression += n; updateCalcDisp(); }
-function calcOp(op) { calcExpression += op; updateCalcDisp(); }
-function calcClear() { calcExpression = ''; updateCalcDisp(); }
-function calcDel() { calcExpression = calcExpression.slice(0, -1); updateCalcDisp(); }
-function updateCalcDisp() { document.getElementById('calcDisp').innerText = calcExpression || '0'; }
-function calcRes() { try { calcExpression = eval(calcExpression).toString(); updateCalcDisp(); } catch { document.getElementById('calcDisp').innerText = 'Error'; calcExpression = ''; } }
+        async function loadAllDataFromFirebase() {
+            try {
+                window.dbCollections = { computers: {}, faceRecognition: {}, mikrotik: {}, branches: {}, hubs: {}, cctv: {} };
+                
+                const hubSnap = await window.getDocs(window.collection(window.firebaseDb, 'hubs'));
+                hubSnap.forEach(d => window.dbCollections.hubs[d.id] = d.data());
 
-dragElement(document.getElementById("calcContainer"));
-function dragElement(elmnt) {
-    var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    if (document.getElementById("calcHeader")) { document.getElementById("calcHeader").onmousedown = dragMouseDown; }
-    function dragMouseDown(e) { e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY; document.onmouseup = closeDragElement; document.onmousemove = elementDrag; }
-    function elementDrag(e) { e.preventDefault(); pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY; pos3 = e.clientX; pos4 = e.clientY; elmnt.style.top = (elmnt.offsetTop - pos2) + "px"; elmnt.style.left = (elmnt.offsetLeft - pos1) + "px"; elmnt.style.bottom = "auto"; elmnt.style.right = "auto"; }
-    function closeDragElement() { document.onmouseup = null; document.onmousemove = null; }
-}
+                const branchSnap = await window.getDocs(window.collection(window.firebaseDb, 'branches'));
+                branchSnap.forEach(d => window.dbCollections.branches[d.id] = d.data());
 
-load();
-</script>
+                await loadCollectionIntoMemory('computers');
+                await loadCollectionIntoMemory('faceRecognition');
+                await loadCollectionIntoMemory('mikrotik');
+                await loadCollectionIntoMemory('cctv');
+
+                reloadComputersTable();
+                reloadFaceRecogTable();
+                reloadMikrotikTable();
+                reloadCctvTable();
+
+                loadCardsIntoGrid('branches', 'branch-cards-grid', renderBranchCard);
+                loadCardsIntoGrid('hubs', 'hub-cards-grid', renderHubCard);
+                
+                updateDashboardStats();
+            } catch (e) {
+                console.error("Error loading data from Firestore:", e);
+            }
+        }
+
+        async function loadCollectionIntoMemory(colName) {
+            const querySnapshot = await window.getDocs(window.collection(window.firebaseDb, colName));
+            querySnapshot.forEach((docSnap) => {
+                window.dbCollections[colName][docSnap.id] = docSnap.data();
+            });
+        }
+
+        async function loadCardsIntoGrid(colName, gridId, renderFn) {
+            const grid = document.getElementById(gridId);
+            if(!grid) return;
+            grid.innerHTML = '';
+            for (const [id, data] of Object.entries(window.dbCollections[colName])) {
+                grid.appendChild(renderFn(id, data));
+            }
+        }
+
+        function reloadComputersTable() {
+            const tbody = document.querySelector('#table-computer tbody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            const filterType = inventoryFilters.computer;
+            
+            for (const [id, data] of Object.entries(window.dbCollections.computers)) {
+                const bName = data.branchName || data.locationDescription || '';
+                const isHub = isItemHub(bName, data.branchCode);
+                if (filterType === 'branch' && isHub) continue;
+                if (filterType === 'hub' && !isHub) continue;
+                tbody.appendChild(renderComputerRow(id, data));
+            }
+            filterTableSearch('computer');
+        }
+
+        function reloadFaceRecogTable() {
+            const tbody = document.querySelector('#table-facerecog tbody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            const filterType = inventoryFilters.facerecog;
+            
+            for (const [id, data] of Object.entries(window.dbCollections.faceRecognition)) {
+                const isHub = isItemHub(data.branchName, data.branchCode);
+                if (filterType === 'branch' && isHub) continue;
+                if (filterType === 'hub' && !isHub) continue;
+                tbody.appendChild(renderFaceRecogRow(id, data));
+            }
+            filterTableSearch('facerecog');
+        }
+
+        function reloadMikrotikTable() {
+            const tbody = document.querySelector('#table-mikrotik tbody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            const filterType = inventoryFilters.mikrotik;
+            
+            for (const [id, data] of Object.entries(window.dbCollections.mikrotik)) {
+                const isHub = isItemHub(data.branchName, data.branchCode);
+                if (filterType === 'branch' && isHub) continue;
+                if (filterType === 'hub' && !isHub) continue;
+                tbody.appendChild(renderMikrotikRow(id, data));
+            }
+            filterTableSearch('mikrotik');
+        }
+
+        function reloadCctvTable() {
+            const tbody = document.querySelector('#table-cctv tbody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            const filterType = inventoryFilters.cctv;
+            
+            for (const [id, data] of Object.entries(window.dbCollections.cctv)) {
+                const isHub = isItemHub(data.branchName, data.branchCode);
+                if (filterType === 'branch' && isHub) continue;
+                if (filterType === 'hub' && !isHub) continue;
+                tbody.appendChild(renderCctvRow(id, data));
+            }
+            filterTableSearch('cctv');
+        }
+
+        function renderComputerRow(id, data) {
+            const tr = document.createElement('tr');
+            tr.setAttribute('data-id', id);
+            tr.innerHTML = `
+                <td class="p-3.5 font-medium text-slate-800 dark:text-slate-100">${data.tseName || ''}</td>
+                <td class="p-3.5">${data.businessUnit || ''}</td>
+                <td class="p-3.5">${data.region || ''}</td>
+                <td class="p-3.5">${data.area || ''}</td>
+                <td class="p-3.5 font-mono font-bold text-red-600 dark:text-red-400">${data.branchCode || ''}</td>
+                <td class="p-3.5">${data.locationDescription || data.location || ''}</td>
+                <td class="p-3.5 font-mono">${data.assetTag || ''}</td>
+                <td class="p-3.5 font-mono text-xs">${data.serial || ''}</td>
+                <td class="p-3.5">${data.model || ''}</td>
+                <td class="p-3.5">${data.category || ''}</td>
+                <td class="p-3.5">${getStatusBadge(data.status || data.actualStatus)}</td>
+                <td class="p-3.5">${data.ptuStatus || ''}</td>
+                <td class="p-3.5 font-mono">${data.branchTin || ''}</td>
+                <td class="p-3.5">${data.machineType || ''}</td>
+                <td class="p-3.5">${data.processor || ''}</td>
+                <td class="p-3.5">${data.osVersion || ''}</td>
+                <td class="p-3.5">${data.deviceFamily || ''}</td>
+                <td class="p-3.5 font-mono">${data.hostId || ''}</td>
+                <td class="p-3.5 font-mono">${data.osTicket || ''}</td>
+                <td class="p-3.5 font-bold ${data.soti === 'Yes' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'}">${data.soti || 'No'}</td>
+                <td class="p-3.5 font-bold ${data.sophos === 'Yes' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'}">${data.sophos || 'No'}</td>
+                <td class="p-3.5 font-bold ${data.itams === 'Yes' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'}">${data.itams || 'No'}</td>
+                <td class="p-3.5 text-right space-x-1">
+                    <button onclick="openModal('computer', 'edit', '${id}')" class="bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-700 dark:text-amber-400 px-2.5 py-1 rounded-lg text-xs font-medium"><i class="fa-solid fa-pen"></i></button>
+                    <button onclick="deleteCloudRecord('computers', '${id}')" class="bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-400 px-2.5 py-1 rounded-lg text-xs font-medium"><i class="fa-solid fa-trash"></i></button>
+                </td>`;
+            return tr;
+        }
+
+        function renderPasswordCell(passwordText) {
+            if (!passwordText) return '';
+            const uniqueId = 'pwd_' + Math.random().toString(36).substr(2, 9);
+            return `
+                <div class="flex items-center space-x-1.5">
+                    <span id="${uniqueId}" class="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-700 dark:text-slate-300" data-plain="${passwordText}" data-hidden="true">••••••••</span>
+                    <button onclick="togglePasswordVisibility('${uniqueId}', this)" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs px-1" title="Toggle Password Visibility">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                    <button onclick="copyToClipboard('${passwordText}', 'Password copied to clipboard!')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs px-1" title="Copy Password">
+                        <i class="fa-solid fa-copy"></i>
+                    </button>
+                </div>`;
+        }
+
+        function togglePasswordVisibility(elementId, btnEl) {
+            const span = document.getElementById(elementId);
+            if (!span) return;
+            const isHidden = span.getAttribute('data-hidden') === 'true';
+            const plainText = span.getAttribute('data-plain');
+            if (isHidden) {
+                span.innerText = plainText;
+                span.setAttribute('data-hidden', 'false');
+                btnEl.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
+            } else {
+                span.innerText = '••••••••';
+                span.setAttribute('data-hidden', 'true');
+                btnEl.innerHTML = '<i class="fa-solid fa-eye"></i>';
+            }
+        }
+
+        function renderFaceRecogRow(id, data) {
+            const tr = document.createElement('tr');
+            tr.setAttribute('data-id', id);
+            
+            const ipDisplay = data.ipAddress ? `<a href="http://${data.ipAddress}" target="_blank" class="font-mono text-xs text-red-600 dark:text-red-400 hover:underline">${data.ipAddress} <i class="fa-solid fa-external-link-alt ml-1 text-[10px]"></i></a>` : '';
+            const userDisplay = data.username ? `<button onclick="copyToClipboard('${data.username}', 'Username copied!')" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded font-mono text-xs">${data.username}</button>` : '';
+
+            tr.innerHTML = `
+                <td class="p-3.5 font-mono font-bold text-red-600 dark:text-red-400">${data.branchCode || ''}</td>
+                <td class="p-3.5 font-medium text-slate-800 dark:text-slate-100">${data.branchName || ''}</td>
+                <td class="p-3.5">${ipDisplay}</td>
+                <td class="p-3.5 font-mono text-xs">${data.subnetMask || ''}</td>
+                <td class="p-3.5 font-mono text-xs">${data.defaultGateway || ''}</td>
+                <td class="p-3.5 font-mono text-xs">${data.serialNumber || ''}</td>
+                <td class="p-3.5 font-mono text-xs">${data.macAddress || ''}</td>
+                <td class="p-3.5">${userDisplay}</td>
+                <td class="p-3.5">${renderPasswordCell(data.password)}</td>
+                <td class="p-3.5">${getStatusBadge(data.status)}</td>
+                <td class="p-3.5 text-slate-600 dark:text-slate-300">${data.remarks || ''}</td>
+                <td class="p-3.5 text-right space-x-1">
+                    <button onclick="openModal('facerecog', 'edit', '${id}')" class="bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-700 dark:text-amber-400 px-2.5 py-1 rounded-lg text-xs font-medium"><i class="fa-solid fa-pen"></i></button>
+                    <button onclick="deleteCloudRecord('faceRecognition', '${id}')" class="bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-400 px-2.5 py-1 rounded-lg text-xs font-medium"><i class="fa-solid fa-trash"></i></button>
+                </td>`;
+            return tr;
+        }
+
+        function renderMikrotikRow(id, data) {
+            const tr = document.createElement('tr');
+            tr.setAttribute('data-id', id);
+
+            const ipDisplay = data.ipAddress ? `<button onclick="copyToClipboard('${data.ipAddress}', 'IP address copied!')" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded font-mono text-xs">${data.ipAddress}</button>` : '';
+            const firmwareDisplay = data.firmwareVersion ? `<span class="font-mono text-xs text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">${data.firmwareVersion}</span>` : '';
+            const userDisplay = data.username ? `<button onclick="copyToClipboard('${data.username}', 'Username copied!')" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded font-mono text-xs">${data.username}</button>` : '';
+
+            tr.innerHTML = `
+                <td class="p-3.5 font-mono font-bold text-red-600 dark:text-red-400">${data.branchCode || ''}</td>
+                <td class="p-3.5 font-medium text-slate-800 dark:text-slate-100">${data.branchName || ''}</td>
+                <td class="p-3.5">${ipDisplay}</td>
+                <td class="p-3.5">${firmwareDisplay}</td>
+                <td class="p-3.5">${userDisplay}</td>
+                <td class="p-3.5">${renderPasswordCell(data.password)}</td>
+                <td class="p-3.5">${getStatusBadge(data.status)}</td>
+                <td class="p-3.5 text-slate-600 dark:text-slate-300">${data.remarks || ''}</td>
+                <td class="p-3.5 text-right space-x-1">
+                    <button onclick="openModal('mikrotik', 'edit', '${id}')" class="bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-700 dark:text-amber-400 px-2.5 py-1 rounded-lg text-xs font-medium"><i class="fa-solid fa-pen"></i></button>
+                    <button onclick="deleteCloudRecord('mikrotik', '${id}')" class="bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-400 px-2.5 py-1 rounded-lg text-xs font-medium"><i class="fa-solid fa-trash"></i></button>
+                </td>`;
+            return tr;
+        }
+
+        function renderCctvRow(id, data) {
+            const tr = document.createElement('tr');
+            tr.setAttribute('data-id', id);
+
+            const ipDisplay = data.ipAddress ? `<a href="http://${data.ipAddress}" target="_blank" class="font-mono text-xs text-red-600 dark:text-red-400 hover:underline">${data.ipAddress} <i class="fa-solid fa-external-link-alt ml-1 text-[10px]"></i></a>` : '';
+            const userDisplay = data.username ? `<button onclick="copyToClipboard('${data.username}', 'Username copied!')" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded font-mono text-xs">${data.username}</button>` : '';
+
+            tr.innerHTML = `
+                <td class="p-3.5 font-mono font-bold text-red-600 dark:text-red-400">${data.branchCode || ''}</td>
+                <td class="p-3.5 font-medium text-slate-800 dark:text-slate-100">${data.branchName || ''}</td>
+                <td class="p-3.5">${ipDisplay}</td>
+                <td class="p-3.5">${data.cameraCount || ''}</td>
+                <td class="p-3.5 font-medium text-slate-700 dark:text-slate-300">${data.storage || ''}</td>
+                <td class="p-3.5">${userDisplay}</td>
+                <td class="p-3.5">${renderPasswordCell(data.password)}</td>
+                <td class="p-3.5">${getStatusBadge(data.status)}</td>
+                <td class="p-3.5 text-slate-600 dark:text-slate-300">${data.remarks || ''}</td>
+                <td class="p-3.5 text-right space-x-1">
+                    <button onclick="openModal('cctv', 'edit', '${id}')" class="bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-700 dark:text-amber-400 px-2.5 py-1 rounded-lg text-xs font-medium"><i class="fa-solid fa-pen"></i></button>
+                    <button onclick="deleteCloudRecord('cctv', '${id}')" class="bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-400 px-2.5 py-1 rounded-lg text-xs font-medium"><i class="fa-solid fa-trash"></i></button>
+                </td>`;
+            return tr;
+        }
+
+        function renderBranchCard(id, data) {
+            const cleanBranchCode = (data.branchCode || '').trim().toUpperCase();
+            
+            let activeComputersCount = 0;
+            for (const [compKey, compVal] of Object.entries(window.dbCollections.computers)) {
+                if ((compVal.branchCode || '').trim().toUpperCase() === cleanBranchCode) {
+                    activeComputersCount++;
+                }
+            }
+
+            const div = document.createElement('div');
+            div.setAttribute('data-id', id);
+            div.setAttribute('data-branch-code', cleanBranchCode);
+            div.className = "bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between";
+            div.innerHTML = `
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-100 text-base">${data.branchName || ''}</h3>
+                        <div class="flex items-center space-x-2">
+                            ${getStatusBadge(data.status)}
+                            <span class="bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-400 font-mono text-xs px-2.5 py-1 rounded-full font-bold">${data.branchCode || ''}</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-4"><i class="fa-solid fa-location-dot mr-1 text-slate-400"></i> ${data.location || ''}</p>
+                    <div class="space-y-2 text-xs text-slate-600 dark:text-slate-300 border-t border-slate-100 dark:border-slate-800 pt-3">
+                        <div class="flex justify-between items-center"><span>Team Head:</span><span class="font-semibold text-slate-800 dark:text-slate-100">${data.teamHead || ''}</span></div>
+                        <div class="flex justify-between items-center"><span>Contact No.:</span><span class="font-mono text-slate-700 dark:text-slate-300">${data.contactNo || ''}</span></div>
+                        <div class="flex justify-between items-center"><span>ISP:</span><span class="font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/50 px-2 py-0.5 rounded">${data.isp || ''}</span></div>
+                        <div class="flex justify-between items-center border-t border-dashed border-slate-100 dark:border-slate-800 pt-2 font-medium text-slate-700 dark:text-slate-300"><span>Active Computers:</span><span class="branch-comp-count font-bold text-red-600 dark:text-red-400">${activeComputersCount}</span></div>
+                    </div>
+                </div>
+                <div class="mt-6 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end space-x-2">
+                    <button onclick="openModal('branch', 'edit', '${id}')" class="text-xs bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-700 dark:text-amber-400 px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen"></i><span>Edit</span></button>
+                    <button onclick="deleteCloudRecord('branches', '${id}')" class="text-xs bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-400 px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1"><i class="fa-solid fa-trash"></i><span>Delete</span></button>
+                </div>`;
+            return div;
+        }
+
+        function renderHubCard(id, data) {
+            const cleanBranchCode = (data.branchCode || '').trim().toUpperCase();
+            
+            let activeComputersCount = 0;
+            for (const [compKey, compVal] of Object.entries(window.dbCollections.computers)) {
+                if ((compVal.branchCode || '').trim().toUpperCase() === cleanBranchCode) {
+                    activeComputersCount++;
+                }
+            }
+
+            const div = document.createElement('div');
+            div.setAttribute('data-id', id);
+            div.setAttribute('data-branch-code', cleanBranchCode);
+            div.className = "bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between";
+            div.innerHTML = `
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-100 text-base">${data.branchName || ''}</h3>
+                        <div class="flex items-center space-x-2">
+                            ${getStatusBadge(data.status)}
+                            <span class="bg-purple-100 dark:bg-purple-950/50 text-purple-700 dark:text-purple-400 font-mono text-xs px-2.5 py-1 rounded-full font-bold">${data.branchCode || ''}</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-4"><i class="fa-solid fa-location-dot mr-1 text-slate-400"></i> ${data.location || ''}</p>
+                    <div class="space-y-2 text-xs text-slate-600 dark:text-slate-300 border-t border-slate-100 dark:border-slate-800 pt-3">
+                        <div class="flex justify-between items-center"><span>Team Head:</span><span class="font-semibold text-slate-800 dark:text-slate-100">${data.teamHead || ''}</span></div>
+                        <div class="flex justify-between items-center"><span>Contact No.:</span><span class="font-mono text-slate-700 dark:text-slate-300">${data.contactNo || ''}</span></div>
+                        <div class="flex justify-between items-center"><span>ISP:</span><span class="font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/50 px-2 py-0.5 rounded">${data.isp || ''}</span></div>
+                        <div class="flex justify-between items-center border-t border-dashed border-slate-100 dark:border-slate-800 pt-2 font-medium text-slate-700 dark:text-slate-300"><span>Active Computers:</span><span class="branch-comp-count font-bold text-purple-600 dark:text-purple-400">${activeComputersCount}</span></div>
+                    </div>
+                </div>
+                <div class="mt-6 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end space-x-2">
+                    <button onclick="openModal('hub', 'edit', '${id}')" class="text-xs bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-700 dark:text-amber-400 px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1"><i class="fa-solid fa-pen"></i><span>Edit</span></button>
+                    <button onclick="deleteCloudRecord('hubs', '${id}')" class="text-xs bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-400 px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1"><i class="fa-solid fa-trash"></i><span>Delete</span></button>
+                </div>`;
+            return div;
+        }
+
+        function updateDashboardStats() {
+            const devStat = document.getElementById('stat-devices');
+            const branchStat = document.getElementById('stat-branches');
+            const hubStat = document.getElementById('stat-hubs');
+            const cctvStat = document.getElementById('stat-cctv');
+
+            if(devStat) devStat.innerText = Object.keys(window.dbCollections.computers).length + Object.keys(window.dbCollections.faceRecognition).length + Object.keys(window.dbCollections.mikrotik).length;
+            if(branchStat) branchStat.innerText = Object.keys(window.dbCollections.branches).length;
+            if(hubStat) hubStat.innerText = Object.keys(window.dbCollections.hubs).length;
+            if(cctvStat) cctvStat.innerText = Object.keys(window.dbCollections.cctv).length;
+        }
+
+        function openModal(type, mode, recordId = null) {
+            currentModalType = type;
+            currentModalMode = mode;
+            editingRecordId = recordId;
+            const modal = document.getElementById('assetModal');
+            const title = document.getElementById('modalTitle');
+            const body = document.getElementById('modalBody');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            title.innerText = `${mode === 'edit' ? 'Edit' : 'Add New'} ${type.toUpperCase()}`;
+
+            let colMap = type;
+            if (type === 'computer') colMap = 'computers';
+            if (type === 'facerecog') colMap = 'faceRecognition';
+            if (type === 'branch') colMap = 'branches';
+            if (type === 'hub') colMap = 'hubs';
+
+            const data = (mode === 'edit' && recordId) ? (window.dbCollections[colMap]?.[recordId] || {}) : {};
+            const currentStatus = data.status || data.actualStatus || 'Online';
+
+            const fieldClass = "w-full text-xs border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all";
+            const labelClass = "block text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider mb-1";
+
+            const statusSelectHTML = `
+                <div>
+                    <label class="${labelClass}">Status</label>
+                    <select id="m-status" class="${fieldClass}">
+                        <option value="Online" ${currentStatus.toLowerCase() === 'online' ? 'selected' : ''}>Online</option>
+                        <option value="Offline" ${currentStatus.toLowerCase() === 'offline' ? 'selected' : ''}>Offline</option>
+                    </select>
+                </div>`;
+
+            if (type === 'computer') {
+                body.innerHTML = `
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div><label class="${labelClass}">TSE Name</label><input type="text" id="m-tseName" value="${data.tseName || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Business Unit</label><input type="text" id="m-businessUnit" value="${data.businessUnit || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Region</label><input type="text" id="m-region" value="${data.region || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Area</label><input type="text" id="m-area" value="${data.area || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Branch Code</label><input type="text" id="m-branchCode" value="${data.branchCode || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Branch / Hub Name</label><input type="text" id="m-branchName" value="${data.branchName || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Location Description</label><input type="text" id="m-locationDescription" value="${data.locationDescription || data.location || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Asset Tag</label><input type="text" id="m-assetTag" value="${data.assetTag || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Serial</label><input type="text" id="m-serial" value="${data.serial || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Model</label><input type="text" id="m-model" value="${data.model || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Category</label><input type="text" id="m-category" value="${data.category || ''}" class="${fieldClass}"></div>
+                        ${statusSelectHTML}
+                        <div><label class="${labelClass}">PTU Status</label><input type="text" id="m-ptuStatus" value="${data.ptuStatus || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Branch TIN</label><input type="text" id="m-branchTin" value="${data.branchTin || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Machine Type</label><input type="text" id="m-machineType" value="${data.machineType || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Processor</label><input type="text" id="m-processor" value="${data.processor || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">OS Version</label><input type="text" id="m-osVersion" value="${data.osVersion || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Device Family</label><input type="text" id="m-deviceFamily" value="${data.deviceFamily || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Host ID / Name</label><input type="text" id="m-hostId" value="${data.hostId || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">OS Ticket #</label><input type="text" id="m-osTicket" value="${data.osTicket || ''}" class="${fieldClass}"></div>
+                        <div>
+                            <label class="${labelClass}">SOTI Enrolled</label>
+                            <select id="m-soti" class="${fieldClass}">
+                                <option value="Yes" ${data.soti === 'Yes' ? 'selected' : ''}>Yes</option>
+                                <option value="No" ${data.soti === 'No' || !data.soti ? 'selected' : ''}>No</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="${labelClass}">Sophos Enrolled</label>
+                            <select id="m-sophos" class="${fieldClass}">
+                                <option value="Yes" ${data.sophos === 'Yes' ? 'selected' : ''}>Yes</option>
+                                <option value="No" ${data.sophos === 'No' || !data.sophos ? 'selected' : ''}>No</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="${labelClass}">ITAMS Inventory</label>
+                            <select id="m-itams" class="${fieldClass}">
+                                <option value="Yes" ${data.itams === 'Yes' ? 'selected' : ''}>Yes</option>
+                                <option value="No" ${data.itams === 'No' || !data.itams ? 'selected' : ''}>No</option>
+                            </select>
+                        </div>
+                    </div>`;
+            } else if (type === 'facerecog') {
+                body.innerHTML = `
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div><label class="${labelClass}">Branch Code</label><input type="text" id="m-branchCode" value="${data.branchCode || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Branch / Hub Name</label><input type="text" id="m-branchName" value="${data.branchName || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">IP Address</label><input type="text" id="m-ipAddress" value="${data.ipAddress || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Subnet Mask</label><input type="text" id="m-subnetMask" value="${data.subnetMask || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Default Gateway</label><input type="text" id="m-defaultGateway" value="${data.defaultGateway || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Serial Number</label><input type="text" id="m-serialNumber" value="${data.serialNumber || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">MAC Address</label><input type="text" id="m-macAddress" value="${data.macAddress || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Username</label><input type="text" id="m-username" value="${data.username || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Password</label><input type="text" id="m-password" value="${data.password || ''}" class="${fieldClass}"></div>
+                        ${statusSelectHTML}
+                        <div class="sm:col-span-2"><label class="${labelClass}">Remarks</label><input type="text" id="m-remarks" value="${data.remarks || ''}" class="${fieldClass}"></div>
+                    </div>`;
+            } else if (type === 'mikrotik') {
+                body.innerHTML = `
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div><label class="${labelClass}">Branch Code</label><input type="text" id="m-branchCode" value="${data.branchCode || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Branch / Hub Name</label><input type="text" id="m-branchName" value="${data.branchName || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">IP Address</label><input type="text" id="m-ipAddress" value="${data.ipAddress || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Firmware Version</label><input type="text" id="m-firmwareVersion" value="${data.firmwareVersion || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Username</label><input type="text" id="m-username" value="${data.username || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Password</label><input type="text" id="m-password" value="${data.password || ''}" class="${fieldClass}"></div>
+                        ${statusSelectHTML}
+                        <div class="sm:col-span-2"><label class="${labelClass}">Remarks</label><input type="text" id="m-remarks" value="${data.remarks || ''}" class="${fieldClass}"></div>
+                    </div>`;
+            } else if (type === 'cctv') {
+                body.innerHTML = `
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div><label class="${labelClass}">Branch Code</label><input type="text" id="m-branchCode" value="${data.branchCode || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Branch / Hub Name</label><input type="text" id="m-branchName" value="${data.branchName || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">IP Address</label><input type="text" id="m-ipAddress" value="${data.ipAddress || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Camera Count</label><input type="text" id="m-cameraCount" value="${data.cameraCount || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Storage</label><input type="text" id="m-storage" value="${data.storage || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Username</label><input type="text" id="m-username" value="${data.username || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Password</label><input type="text" id="m-password" value="${data.password || ''}" class="${fieldClass}"></div>
+                        ${statusSelectHTML}
+                        <div class="sm:col-span-2"><label class="${labelClass}">Remarks</label><input type="text" id="m-remarks" value="${data.remarks || ''}" class="${fieldClass}"></div>
+                    </div>`;
+            } else if (type === 'branch' || type === 'hub') {
+                body.innerHTML = `
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div><label class="${labelClass}">Branch / Hub Name (Include 'HUB' if delivery hub)</label><input type="text" id="m-branchName" value="${data.branchName || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Branch Code</label><input type="text" id="m-branchCode" value="${data.branchCode || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Location</label><input type="text" id="m-location" value="${data.location || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Team Head</label><input type="text" id="m-teamHead" value="${data.teamHead || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">Contact Number</label><input type="text" id="m-contactNo" value="${data.contactNo || ''}" class="${fieldClass}"></div>
+                        <div><label class="${labelClass}">ISP</label><select id="m-isp" class="${fieldClass}"><option ${data.isp==='PLDT'?'selected':''}>PLDT</option><option ${data.isp==='Globe'?'selected':''}>Globe</option><option ${data.isp==='Converge'?'selected':''}>Converge</option></select></div>
+                        ${statusSelectHTML}
+                    </div>`;
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('assetModal').classList.add('hidden');
+            document.getElementById('assetModal').classList.remove('flex');
+        }
+
+        function showDuplicateIpModal(ipAddress) {
+            document.getElementById('duplicateIpText').innerText = ipAddress;
+            const modal = document.getElementById('duplicateIpModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeDuplicateIpModal() {
+            document.getElementById('duplicateIpModal').classList.add('hidden');
+            document.getElementById('duplicateIpModal').classList.remove('flex');
+        }
+
+        function showImportSuccessModal(count) {
+            document.getElementById('importCountText').innerText = count;
+            const modal = document.getElementById('importSuccessModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeImportSuccessModal() {
+            document.getElementById('importSuccessModal').classList.add('hidden');
+            document.getElementById('importSuccessModal').classList.remove('flex');
+        }
+
+        async function saveRecord() {
+            const payload = {};
+            document.querySelectorAll('#modalBody input, #modalBody select').forEach(input => {
+                const key = input.id.replace('m-', '');
+                payload[key] = input.value;
+            });
+
+            let colName = 'computers';
+            if (currentModalType === 'facerecog') colName = 'faceRecognition';
+            if (currentModalType === 'mikrotik') colName = 'mikrotik';
+            if (currentModalType === 'cctv') colName = 'cctv';
+            if (currentModalType === 'branch' || currentModalType === 'hub') {
+                const bName = (payload.branchName || '').toUpperCase();
+                colName = bName.includes('HUB') ? 'hubs' : 'branches';
+            }
+
+            if (payload.ipAddress && payload.ipAddress.trim() !== '') {
+                const targetIp = payload.ipAddress.trim();
+                const existingRecords = window.dbCollections[colName] || {};
+                
+                for (const [id, record] of Object.entries(existingRecords)) {
+                    if (record.ipAddress && record.ipAddress.trim() === targetIp) {
+                        if (currentModalMode === 'edit' && id === editingRecordId) {
+                            continue;
+                        }
+                        showDuplicateIpModal(targetIp);
+                        return;
+                    }
+                }
+            }
+
+            try {
+                if (currentModalMode === 'edit' && editingRecordId) {
+                    await window.updateDoc(window.doc(window.firebaseDb, colName, editingRecordId), payload);
+                } else {
+                    await window.addDoc(window.collection(window.firebaseDb, colName), payload);
+                }
+                closeModal();
+                loadAllDataFromFirebase();
+            } catch (e) {
+                console.error("Error saving record:", e);
+                alert("Failed to save record to Firebase.");
+            }
+        }
+
+        async function deleteCloudRecord(colName, id) {
+            showWarningModal('Delete Record', 'Are you sure you want to delete this record from cloud database?', async () => {
+                try {
+                    await window.deleteDoc(window.doc(window.firebaseDb, colName, id));
+                    loadAllDataFromFirebase();
+                } catch (e) {
+                    console.error("Error deleting record:", e);
+                }
+            });
+        }
+
+        function showWarningModal(title, text, onConfirm) {
+            document.getElementById('warningTitle').innerText = title;
+            document.getElementById('warningText').innerText = text;
+            pendingAction = onConfirm;
+            const modal = document.getElementById('warningModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeWarningModal() {
+            document.getElementById('warningModal').classList.add('hidden');
+            document.getElementById('warningModal').classList.remove('flex');
+            pendingAction = null;
+        }
+
+        document.getElementById('warningConfirmBtn').onclick = function() {
+            if (pendingAction) pendingAction();
+            closeWarningModal();
+        };
+
+        function exportTableToCSV(tableId, filename) {
+            const table = document.getElementById(tableId);
+            if (!table) return;
+            let csv = [];
+            const rows = table.querySelectorAll('tr');
+            rows.forEach(row => {
+                if (row.style.display !== 'none') {
+                    let cols = row.querySelectorAll('th, td');
+                    let data = [];
+                    for (let i = 0; i < cols.length - 1; i++) {
+                        let text = cols[i].innerText.replace(/"/g, '""');
+                        data.push('"' + text + '"');
+                    }
+                    csv.push(data.join(','));
+                }
+            });
+            const csvFile = new Blob([csv.join('\n')], { type: 'text/csv' });
+            const downloadLink = document.createElement('a');
+            downloadLink.download = filename;
+            downloadLink.href = window.URL.createObjectURL(csvFile);
+            downloadLink.style.display = 'none';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            downloadLink.remove();
+        }
+
+        function filterCards(type) {
+            const input = document.getElementById(`search-${type}`);
+            const filter = input.value.toLowerCase();
+            document.querySelectorAll(`#${type}-cards-grid > div`).forEach(card => {
+                card.style.display = card.textContent.toLowerCase().includes(filter) ? '' : 'none';
+            });
+        }
+
+        function filterTableSearch(tableName) {
+            const input = document.getElementById(`search-${tableName}`);
+            if (!input) return;
+            const filter = input.value.toLowerCase();
+
+            document.querySelectorAll(`#table-${tableName} tbody tr`).forEach(row => {
+                const matchesSearch = row.textContent.toLowerCase().includes(filter);
+                row.style.display = matchesSearch ? '' : 'none';
+            });
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            
+            const toast = document.createElement('div');
+            toast.className = "bg-slate-900 dark:bg-slate-800 text-white text-xs px-4 py-2.5 rounded-xl shadow-2xl border border-slate-700/80 pointer-events-auto transform translate-y-3 opacity-0 transition-all duration-300 flex items-center space-x-2";
+            toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i><span class="font-medium">${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-3', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-3', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+
+        function copyToClipboard(text, successMessage = 'Copied to clipboard!') {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(successMessage);
+            });
+        }
+
+        async function confirmSystemReset() {
+            showWarningModal('Reset Cloud View', 'Warning: This will reload the current view from the database.', () => {
+                loadAllDataFromFirebase();
+            });
+        }
+
+        function exportDataJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.dbCollections, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `jerome_asset_inventory_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importDataJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const importedCollections = JSON.parse(e.target.result);
+                    if (!importedCollections || typeof importedCollections !== 'object') {
+                        throw new Error('Invalid format');
+                    }
+
+                    let importedCount = 0;
+                    for (const [colName, records] of Object.entries(importedCollections)) {
+                        if (records && typeof records === 'object') {
+                            for (const [docId, docData] of Object.entries(records)) {
+                                await window.setDoc(window.doc(window.firebaseDb, colName, docId), docData);
+                                importedCount++;
+                            }
+                        }
+                    }
+
+                    await loadAllDataFromFirebase();
+                    showImportSuccessModal(importedCount);
+                } catch (err) {
+                    console.error("Import error:", err);
+                    alert('Invalid JSON backup file.');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+    </script>
 </body>
 </html>
